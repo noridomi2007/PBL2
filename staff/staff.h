@@ -9,5 +9,6 @@ class staff {
     string phonenumber;
     string matkhaulogin;
     int doanhsobanhang;
+    
 };
 #endif

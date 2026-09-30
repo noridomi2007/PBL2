@@ -15,5 +15,4 @@ int sl;
 string color;
 };
 
-
 #endif
