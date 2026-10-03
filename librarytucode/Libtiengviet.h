@@ -1,5 +1,4 @@
-// VietText.h - Xu ly go / hien thi / tim kiem tieng Viet cho raylib (C++)
-// Header-only: chi can #include "VietText.h"
+
 #pragma once
 #include "raylib.h"
 #include <cstring>
@@ -17,10 +16,7 @@ struct InputBox {
     int length = 0;
     bool focused = false;
 };
-
-// ======================================================
 // FONT
-// ======================================================
 inline void add_range(int *cp, int &n, int a, int b) {
     for (int c = a; c <= b; c++) {
         cp[n++] = c;
@@ -31,7 +27,6 @@ inline void add_range(int *cp, int &n, int a, int b) {
 inline Font load_font_utf8(const char *path, int size) {
     int cp[320]; // thuc te dung 262 phan tu
     int n = 0;
-
     add_range(cp, n, 32, 126);        // ASCII
     add_range(cp, n, 0xC0, 0xFF);     // Latin-1: A E I O U Y co dau
     add_range(cp, n, 0x102, 0x103);   // Ă ă
@@ -42,15 +37,11 @@ inline Font load_font_utf8(const char *path, int size) {
     add_range(cp, n, 0x1AF, 0x1B0);   // Ư ư
     add_range(cp, n, 0x1EA0, 0x1EF9); // Ạ ... ỹ
     add_range(cp, n, 0x20AB, 0x20AB); // ₫
-
     Font f = LoadFontEx(path, size, cp, n);
     SetTextureFilter(f.texture, TEXTURE_FILTER_BILINEAR);
     return f;
 }
-
-// ======================================================
 // TIEN ICH UTF-8
-// ======================================================
 // Dem so KY TU (khong phai byte)
 inline int len_utf8(const char *s) {
     if (!s) {
@@ -64,7 +55,6 @@ inline int len_utf8(const char *s) {
     }
     return n;
 }
-
 // Chieu rong hieu chinh theo so byte du cua chu co dau
 inline int width_utf8(const char *s, int width) {
     if (!s) {
@@ -72,11 +62,9 @@ inline int width_utf8(const char *s, int width) {
     }
     return width + ((int)strlen(s) - len_utf8(s));
 }
-
 inline bool is_ws(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
-
 // Cat khoang trang dau/cuoi
 inline void trim(string &s) {
     size_t b = 0;

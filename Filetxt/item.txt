@@ -1,0 +1,1 @@
+Subtype |   idsp    |       namesp        |   brandsp   |     color     |    gia     |   sl   |   size   |    material   |  dimension |
