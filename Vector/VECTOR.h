@@ -51,7 +51,7 @@ VECTOR& operator=(const VECTOR& o) {
     T& operator[](int i)             { return data[i]; }
     const T& operator[](int i) const { return data[i]; }
     int size() const                 { return n; }
-    int maxsize() const              {return max; };
+    int maxsize() const              {return cap; };
     bool empty() const               { return n == 0; }
     void clear()                     { n = 0; }   
 };

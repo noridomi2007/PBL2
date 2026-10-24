@@ -1,1 +1,7 @@
-Subtype |   idsp    |       namesp        |   brandsp   |     color     |    gia     |   sl   |   size   |    material   |  dimension |
+| idsp         | namesp                     | brandsp        | Kieusp         | color        | gia         | sl    | size    | material       | dimension   |
+| SPCM0001A    | Áo Thun Trơn Cổ Tròn       | Coolmate       | Áo             | Đen          | 189000      | 50    | XL      | Cotton         | -           |
+| SPLE0001Q    | Quần Jean Ống Suông        | Levi's         | Quần           | Xanh Đậm     | 550000      | 30    | 32      | Denim          | -           |
+| SPNK0001G    | Giày Sneaker Cổ Thấp       | Nike           | Giày           | Trắng        | 1200000     | 20    | 42      | Da Tổng Hợp    | -           |
+| SPCS0001D    | Đồng Hồ Nam Classic        | Casio          | Đồng hồ        | Bạc          | 850000      | 15    | Free    | Kim Loại       | 40mm        |
+| SPAD0001M    | Mũ Lưỡi Trai Thể Thao      | Adidas         | Mũ             | Đen          | 250000      | 40    | Free    | Kaki           | -           |
+| SPAG0001X    | Vòng Tay Trầm Hương        | Agarwood       | Vòng tay       | Nâu          | 450000      | 25    | 16cm    | Gỗ Trầm        | 10mm        |
