@@ -2,26 +2,31 @@
 #define SHOP_H
 
 #include "../item/item.h"
-#include "../Vector/VECTOR.h"
+#include "../Vectorandheap/VECTOR.h"
 #include <string>
-
+#include "../doanhthu/doanhthu.h"
 using namespace std;
 
 // Kết quả của Shop::ban()
 enum KetQuaBan {
-    BAN_OK,                  // đã trừ kho
-    BAN_KHONG_CO_SP,         // không có mã sản phẩm này
-    BAN_KHONG_CO_BIEN_THE,   // sản phẩm không có ô (màu, size) này
-    BAN_THIEU_HANG,          // ô đó không đủ số lượng
-    BAN_SO_LUONG_SAI,        // số lượng <= 0
-    BAN_LOI_GHI_FILE         // không ghi được file -> đã hoàn lại kho, đơn không thành công
+    BAN_OK,
+    BAN_KHONG_CO_SP,
+    BAN_KHONG_CO_BIEN_THE,
+    BAN_THIEU_HANG,
+    BAN_SO_LUONG_SAI,
+    BAN_LOI_GHI_FILE,
+    BAN_NGAY_SAI           // ngày không có thật hoặc sau ngày hôm nay
+};
+enum KetQuaThem {
+    THEM_OK, THEM_THIEU_THONG_TIN, THEM_SAI_KIEU, THEM_KY_TU_CAM,
+    THEM_LOI_ANH, THEM_TRUNG_MA, THEM_LOI_GHI_FILE, THEM_QUA_DAI 
 };
 
 class Shop {
 private:
     VECTOR<product*> ds; // Danh sách quản lý toàn bộ con trỏ sản phẩm đa hình
     string file_hien_tai = "Filetxt/item.txt"; // file đang dùng (do doc_file ghi nhớ), ban() tự lưu vào đây
-
+    DoanhThu doanh_thu;
 public:
     // Constructors & Destructor
     Shop();
@@ -34,14 +39,16 @@ public:
     // Các chức năng nghiệp vụ cơ bản (Giữ nguyên)
     bool add(product* p);                   // Thêm sản phẩm mới (chặn trùng mã idsp)
     bool remove(const string& id);          // Xóa sản phẩm theo idsp (thu hồi bộ nhớ an toàn)
+    bool xoa_san_pham(const string& id);
     int  find(const string& id) const;      // Tìm vị trí sản phẩm theo idsp, trả về -1 nếu không có
     int  size() const;                      // Số lượng sản phẩm hiện có trong kho
     product* take(int i) const;             // Lấy con trỏ sản phẩm thứ i
-
+    const DoanhThu& lay_doanh_thu() const { return doanh_thu; }
     // Bán hàng: trừ kho đúng ô (màu, size). Đây là cổng DUY NHẤT để khách mua làm thay đổi tồn kho.
     // Bán thành công thì tự ghi file ngay (trừ kho trong file txt). Ghi file lỗi -> hoàn lại kho, trả BAN_LOI_GHI_FILE
     // (sau này gắn thêm tạo hóa đơn ở đây)
-    KetQuaBan ban(const string& id, const string& color, const string& size, int so_luong);
+    KetQuaBan ban(const string& id, const string& color, const string& size, int so_luong,
+              int ngay, int thang, int nam);
 
     // Quản lý bộ nhớ và file (Giữ nguyên)
     void clear();                           // Giải phóng toàn bộ bộ nhớ và xóa sạch danh sách
@@ -95,6 +102,12 @@ public:
                                          long long gia_max = 0,
                                          int sap_xep = 0,
                                          double nguong_khop_min = 1.0) const;
+    KetQuaThem them_quan_ao(const string &ten_hang, const string &ten_kieu,
+                        const string &ten_sp, const string &kieu_chi_tiet,
+                        long long gia, const string &chat_lieu,
+                        const VECTOR<Variant> &bien_the,
+                        const VECTOR<string> &ds_anh_nguon,   // nhiều ảnh
+                        string *ma_moi = nullptr);
 };
 
 #endif

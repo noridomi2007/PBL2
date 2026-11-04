@@ -2,7 +2,12 @@
 #include "../librarytucode/Libtiengviet.h"
 #include <iomanip>
 #include <cctype>
-
+#include <filesystem>
+#define STBIDEF static          // giữ bản stb này riêng cho file này, không đụng bản trong lib
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_JPEG
+#include "../librarytucode/stb_image.h"
+namespace fs = std::filesystem;
 // =========================================================================
 // HÀM TIỆN ÍCH NỘI BỘ
 // =========================================================================
@@ -105,12 +110,10 @@ const hang_sp_entry DS_HANG_SP[] = {
     {"Louis Vuitton", "LV"}, 
     {"Nike",          "NK"},
     {"Adidas",        "AD"},
-    {"Casio",         "CS"},
     {"Levi's",        "LE"},
     {"Gucci",         "GC"},
     {"Zara",          "ZR"},
     {"Uniqlo",        "UQ"},
-    {"Agarwood",      "AG"},
     {"Puma",          "PM"},
     {"Dior",          "DR"},
     {"Chanel",        "CH"},
@@ -348,27 +351,27 @@ void product::ghi_file(ostream &os) const {
         }
 
         os << "| ";
-        in_o(os, idsp, 12);
+        in_o(os, idsp, RONG_ID);
         os << " | ";
-        in_o(os, namesp, 26);
+        in_o(os, namesp, RONG_TEN);
         os << " | ";
-        in_o(os, brandsp, 14);
+        in_o(os, brandsp, RONG_HANG);
         os << " | ";
-        in_o(os, kieusp, 20);
+        in_o(os, kieusp, RONG_KIEU);
         os << " | ";
-        in_o(os, c, 12);
+        in_o(os, c, RONG_MAU);
         os << " | ";
-        in_o(os, to_string(price), 11);
+        in_o(os, to_string(price), RONG_GIA);
         os << " | ";
-        in_o(os, to_string(so), 5);
+        in_o(os, to_string(so), RONG_SL);
         os << " | ";
-        in_o(os, s, 7);
+        in_o(os, s, RONG_SIZE);
         os << " | ";
-        in_o(os, mat, 14);
+        in_o(os, mat, RONG_CHAT_LIEU);
         os << " | ";
-        in_o(os, dim, 11);
+        in_o(os, dim, RONG_KICH_THUOC);
         os << " | ";
-        in_o(os, sub, 14);
+        in_o(os, sub, RONG_SUBTYPE);
         os << " |\n";
     }
 }
@@ -455,11 +458,82 @@ product* product::doc_tu_chuoi(const string &line) {
     } else {
         p = new clothing(id, name, brand, sub, kieu, pr, mat);
     }
-    p->them_variant(col, sz, soluong);
+     if (!(col == "-" && sz == "-" && soluong == 0)) {
+        p->them_variant(col, sz, soluong);
+    }
     return p;
 }
 
 ostream& operator<<(ostream &os, const product &p) {
     os << p.xuat_thong_tin();
     return os;
+}
+string duong_dan_anh(const string &idsp, int stt) {
+    return string(THU_MUC_ANH) + "/" + idsp + "_" + to_string(stt) + ".png";
+}
+
+int dem_anh(const string &idsp) {
+    error_code ec;
+    int n = 0;
+    while (n < MAX_ANH_MOI_SP && fs::exists(duong_dan_anh(idsp, n + 1), ec)) n++;
+    return n;
+}
+
+void xoa_tat_ca_anh(const string &idsp) {
+    error_code ec;
+    for (int i = 1; i <= MAX_ANH_MOI_SP; i++) fs::remove(duong_dan_anh(idsp, i), ec);
+}
+
+Image doc_anh_tu_file(const string &duong_nguon) {
+    Image img = {};
+    ifstream f(fs::u8path(duong_nguon), ios::binary);
+    if (!f.is_open()) return img;
+
+    string buf((istreambuf_iterator<char>(f)), istreambuf_iterator<char>());
+    if (buf.size() < 4) return img;
+    const unsigned char *d = reinterpret_cast<const unsigned char*>(buf.data());
+    int n = static_cast<int>(buf.size());
+
+    if (d[0] == 0xFF && d[1] == 0xD8) {                 // JPEG: tự giải mã bằng stb
+        int w = 0, h = 0, ch = 0;
+        unsigned char *px = stbi_load_from_memory(d, n, &w, &h, &ch, 4);
+        if (!px) return img;
+        img.data = px;                                   // raylib sẽ free() bằng UnloadImage
+        img.width = w;
+        img.height = h;
+        img.mipmaps = 1;
+        img.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+        return img;
+    }
+    if (d[0] == 0x89 && d[1] == 'P' && d[2] == 'N')
+        return LoadImageFromMemory(".png", d, n);
+    if (d[0] == 'B' && d[1] == 'M')
+        return LoadImageFromMemory(".bmp", d, n);
+    return img;                                          // định dạng không hỗ trợ
+}
+bool luu_nhieu_anh(const string &idsp, const VECTOR<string> &nguon) {
+    if (!kiem_tra_ma_sp(idsp)) return false;
+    if (nguon.empty() || nguon.size() > MAX_ANH_MOI_SP) return false;
+
+    error_code ec;
+    fs::create_directories(THU_MUC_ANH, ec);
+    if (ec) return false;
+
+    xoa_tat_ca_anh(idsp);   // dọn ảnh cũ còn sót của mã này (nếu có) để không lẫn
+
+    for (int i = 0; i < nguon.size(); i++) {
+        Image img = doc_anh_tu_file(nguon[i]);
+        if (img.data == nullptr) { xoa_tat_ca_anh(idsp); return false; }
+
+        const int MAX_W = 800;   // thu nhỏ ảnh quá to, giữ tỉ lệ
+        if (img.width > MAX_W) {
+            int new_h = static_cast<int>(static_cast<long long>(img.height) * MAX_W / img.width);
+            ImageResize(&img, MAX_W, new_h);
+        }
+
+        bool ok = ExportImage(img, duong_dan_anh(idsp, i + 1).c_str());
+        UnloadImage(img);
+        if (!ok) { xoa_tat_ca_anh(idsp); return false; }
+    }
+    return true;
 }

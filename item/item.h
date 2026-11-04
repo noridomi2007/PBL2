@@ -6,10 +6,21 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include "../Vector/VECTOR.h"
+#include "../Vectorandheap/VECTOR.h"
+#include "raylib.h"
 
 using namespace std;
-
+const int RONG_ID         = 12;
+const int RONG_TEN        = 64;
+const int RONG_HANG       = 16;
+const int RONG_KIEU       = 28;
+const int RONG_MAU        = 16;
+const int RONG_GIA        = 11;
+const int RONG_SL         = 5;
+const int RONG_SIZE       = 8;
+const int RONG_CHAT_LIEU  = 16;
+const int RONG_KICH_THUOC = 11;
+const int RONG_SUBTYPE    = 14;
 // Forward declaration
 class product;
 
@@ -255,4 +266,15 @@ public:
     bool la_phu_kien() const override { return true; }
 };
 
-#endif
+
+const char* const THU_MUC_ANH = "Images";
+const int MAX_ANH_MOI_SP = 10;
+
+string duong_dan_anh(const string &idsp, int stt = 1);  // "Images/SPCM0003A_1.png", stt tính từ 1
+int    dem_anh(const string &idsp);                      // số ảnh hiện có của sản phẩm
+void   xoa_tat_ca_anh(const string &idsp);               // xóa mọi ảnh của mã này
+
+Image  doc_anh_tu_file(const string &duong_nguon);        // img.data == nullptr nếu lỗi (dùng cho preview)
+// Lưu nhiều ảnh: nguon[0] thành _1, nguon[1] thành _2... Được tất cả hoặc không có gì (lỗi giữa chừng thì xóa sạch)
+bool   luu_nhieu_anh(const string &idsp, const VECTOR<string> &nguon);
+#endif 

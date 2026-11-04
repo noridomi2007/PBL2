@@ -1,6 +1,8 @@
 #include "Shop.h"
 #include "../librarytucode/Libtiengviet.h"
 #include <fstream>
+#include <filesystem>
+#include <ctime> 
 #include <iostream>
 #include <iomanip>
 #include <cctype>
@@ -31,6 +33,10 @@ static bool da_ton_tai(const VECTOR<string>& list, const string& item) {
     return false;
 }
 
+// Ký tự '|' và xuống dòng sẽ làm hỏng cấu trúc bảng item.txt
+static bool co_ky_tu_cam(const string &s) {
+    return s.find_first_of("|\r\n") != string::npos;
+}
 
 // =========================================================================
 // CONSTRUCTOR & DESTRUCTOR
@@ -70,15 +76,28 @@ bool Shop::add(product* p) {
 // Xóa sản phẩm theo idsp và giải phóng bộ nhớ an toàn (tránh memory leak)
 bool Shop::remove(const string& id) {
     int vi_tri = find(id);
-    if (vi_tri == -1) {
-        return false; // Không tìm thấy mã cần xóa
-    }
+    if (vi_tri == -1) return false;
 
-    // 1. Giải phóng vùng nhớ heap của sản phẩm
+    string ma = ds[vi_tri]->getid();   // copy trước khi delete (id có thể đang tham chiếu vào chính sản phẩm này)
     delete ds[vi_tri];
-
-    // 2. Xóa con trỏ khỏi vector
     ds.remove(vi_tri);
+    xoa_tat_ca_anh(ma);                // xóa hết ảnh _1, _2, _3...
+    return true;
+}
+
+bool Shop::xoa_san_pham(const string& id) {
+    int vi_tri = find(id);
+    if (vi_tri == -1) return false;
+
+    product* p = ds[vi_tri];
+    string ma = p->getid();
+    ds.remove(vi_tri);                       // gỡ khỏi danh sách nhưng CHƯA delete
+    if (!ghi_file(file_hien_tai)) {
+        ds.push_back(p);                     // ghi lỗi -> trả lại (vị trí trong danh sách có thể đổi, dữ liệu vẫn còn)
+        return false;
+    }
+    delete p;
+    xoa_tat_ca_anh(ma);
     return true;
 }
 
@@ -108,24 +127,108 @@ product* Shop::take(int i) const {
 
 
 // Bán hàng: kiểm tra rồi trừ kho đúng ô (màu, size)
-KetQuaBan Shop::ban(const string& id, const string& color, const string& size, int so_luong) {
+KetQuaBan Shop::ban(const string& id, const string& color, const string& size, int so_luong,
+                    int ngay, int thang, int nam) {
     if (so_luong <= 0) return BAN_SO_LUONG_SAI;
+
+    // Kiểm tra ngày TRƯỚC khi đụng vào kho
+    long long thoi_gian;
+    if (!tao_thoi_gian(ngay, thang, nam, thoi_gian)) return BAN_NGAY_SAI;
 
     int vi_tri = find(id);
     if (vi_tri == -1) return BAN_KHONG_CO_SP;
 
     product* p = ds[vi_tri];
-    if (p->tim_variant(color, size) == -1) return BAN_KHONG_CO_BIEN_THE;
+    int vt = p->tim_variant(color, size);
+    if (vt == -1) return BAN_KHONG_CO_BIEN_THE;
+
+    // Lấy màu/size đúng như đang lưu (tránh lệch hoa thường) trước khi trừ kho
+    string color_chuan = p->get_variant(vt).color;
+    string size_chuan  = p->get_variant(vt).size;
+
     if (!p->tru_kho(color, size, so_luong)) return BAN_THIEU_HANG;
 
-    // Lưu ngay xuống file; nếu ghi lỗi thì hoàn lại kho để RAM và file không lệch nhau
+    // Lưu kho xuống file; lỗi thì hoàn kho để RAM và file không lệch nhau
     if (!ghi_file(file_hien_tai)) {
         p->them_variant(color, size, so_luong);
         return BAN_LOI_GHI_FILE;
     }
+
+    // Ghi sổ doanh thu với ngày người dùng nhập; lỗi thì hoàn kho và lưu lại file kho
+    GiaoDich g;
+    g.thoi_gian = thoi_gian;
+    g.idsp = p->getid();
+    g.ten = p->getname();
+    g.color = color_chuan;
+    g.size = size_chuan;
+    g.sl = so_luong;
+    g.don_gia = p->getprice();
+    if (!doanh_thu.them(g)) {
+        p->them_variant(color, size, so_luong);
+        ghi_file(file_hien_tai);
+        return BAN_LOI_GHI_FILE;
+    }
     return BAN_OK;
 }
+    static bool qua_dai(const string &s, int toi_da) {
+        return len_utf8(s.c_str()) > toi_da;   // đếm ký tự, không đếm byte
+}
+KetQuaThem Shop::them_quan_ao(const string &ten_hang, const string &ten_kieu,
+                              const string &ten_sp, const string &kieu_chi_tiet,
+                              long long gia, const string &chat_lieu,
+                              const VECTOR<Variant> &bien_the,
+                              const VECTOR<string> &ds_anh_nguon, string *ma_moi) {
+    if (ten_hang.empty() || ten_sp.empty() || gia < 0 || bien_the.empty())
+        return THEM_THIEU_THONG_TIN;
+    if (!la_ma_kieu_quan_ao(kieu_sang_ma_kieu(ten_kieu)))
+        return THEM_SAI_KIEU;
 
+    if (co_ky_tu_cam(ten_hang) || co_ky_tu_cam(ten_sp) ||
+        co_ky_tu_cam(kieu_chi_tiet) || co_ky_tu_cam(chat_lieu))
+        return THEM_KY_TU_CAM;
+    if (qua_dai(ten_sp, RONG_TEN) || qua_dai(ten_hang, RONG_HANG) ||
+        qua_dai(kieu_chi_tiet, RONG_KIEU) || qua_dai(chat_lieu, RONG_CHAT_LIEU) ||
+        gia > 99999999999LL)
+        return THEM_QUA_DAI;
+    for (int i = 0; i < bien_the.size(); i++) {
+        if (qua_dai(bien_the[i].color, RONG_MAU) || qua_dai(bien_the[i].size, RONG_SIZE) ||
+            bien_the[i].sl > 99999)
+            return THEM_QUA_DAI;
+    }
+    for (int i = 0; i < bien_the.size(); i++) {
+        if (co_ky_tu_cam(bien_the[i].color) || co_ky_tu_cam(bien_the[i].size))
+            return THEM_KY_TU_CAM;
+    }
+
+    string id = sinh_ma_sp(ten_hang, ten_kieu);   // vd SPCM0003A
+    if (id.empty() || find(id) != -1) return THEM_TRUNG_MA;
+
+    if (!luu_nhieu_anh(id, ds_anh_nguon)) return THEM_LOI_ANH;
+
+    clothing *c = new clothing(id, ten_sp, ten_hang, ten_kieu, kieu_chi_tiet, gia, chat_lieu);
+    for (int i = 0; i < bien_the.size(); i++) {
+        c->them_variant(bien_the[i].color, bien_the[i].size, bien_the[i].sl);
+    }
+    if (c->so_variant() == 0) {
+        delete c;
+        xoa_tat_ca_anh(id);
+        return THEM_THIEU_THONG_TIN;
+    }
+
+    if (!add(c)) {
+        delete c;
+        xoa_tat_ca_anh(id);
+        return THEM_TRUNG_MA;
+    }
+
+    if (!ghi_file(file_hien_tai)) {
+        remove(id);            // remove() xóa luôn ảnh
+        return THEM_LOI_GHI_FILE;
+    }
+
+    if (ma_moi) *ma_moi = id;
+    return THEM_OK;
+}
 
 // =========================================================================
 // QUẢN LÝ BỘ NHỚ VÀ ĐỌC / GHI FILE
@@ -173,42 +276,60 @@ bool Shop::doc_file(const string& duong_dan) {
 
     fin.close();
     file_hien_tai = duong_dan; // nhớ file này để ban() ghi lại đúng chỗ
+    doanh_thu.doc_file(); 
     return true;
 }
 
 // Ghi toàn bộ danh sách sản phẩm ra file theo định dạng bảng chuẩn thẳng hàng
+// Ghi toàn bộ danh sách sản phẩm ra file theo định dạng bảng chuẩn thẳng hàng
+// Ghi ra file tạm trước, thành công hết mới đổi tên đè lên file thật
+// -> lỗi giữa chừng (đầy ổ, tắt máy...) thì file cũ vẫn còn nguyên
 bool Shop::ghi_file(const string& duong_dan) const {
-    ofstream fout(duong_dan);
-    if (!fout.is_open()) {
-        cerr << "[Lỗi] Không thể mở file để ghi: " << duong_dan << endl;
-        return false;
-    }
+    string tam = duong_dan + ".tmp";
 
-    // Ghi dòng tiêu đề (Header) căn chuẩn xác độ rộng từng cột
-    fout << "| " << setw(12) << left << "idsp"
-         << " | " << setw(26) << left << "namesp"
-         << " | " << setw(14) << left << "brandsp"
-         << " | " << setw(20) << left << "Kieusp"
-         << " | " << setw(12) << left << "color"
-         << " | " << setw(11) << left << "gia"
-         << " | " << setw(5) << left << "sl"
-         << " | " << setw(7) << left << "size"
-         << " | " << setw(14) << left << "material"
-         << " | " << setw(11) << left << "dimension"
-         << " | " << setw(14) << left << "subtype"
-         << " |\n";
+    {   // dấu { } để fout tự đóng ở cuối khối, trước khi đổi tên file
+        ofstream fout(tam);
+        if (!fout.is_open()) {
+            cerr << "[Lỗi] Không thể mở file để ghi: " << tam << endl;
+            return false;
+        }
 
-    // Ghi từng sản phẩm
-    for (int i = 0; i < ds.size(); i++) {
-        if (ds[i] != nullptr) {
-            ds[i]->ghi_file(fout);
+        // Ghi dòng tiêu đề (Header) căn chuẩn xác độ rộng từng cột
+        fout << "| " << setw(RONG_ID) << left << "idsp"
+             << " | " << setw(RONG_TEN) << left << "namesp"
+             << " | " << setw(RONG_HANG) << left << "brandsp"
+             << " | " << setw(RONG_KIEU) << left << "Kieusp"
+             << " | " << setw(RONG_MAU) << left << "color"
+             << " | " << setw(RONG_GIA) << left << "gia"
+             << " | " << setw(RONG_SL) << left << "sl"
+             << " | " << setw(RONG_SIZE) << left << "size"
+             << " | " << setw(RONG_CHAT_LIEU) << left << "material"
+             << " | " << setw(RONG_KICH_THUOC) << left << "dimension"
+             << " | " << setw(RONG_SUBTYPE) << left << "subtype"
+             << " |\n";
+
+        // Ghi từng sản phẩm
+        for (int i = 0; i < ds.size(); i++) {
+            if (ds[i] != nullptr) {
+                ds[i]->ghi_file(fout);
+            }
+        }
+
+        fout.close();
+        if (fout.fail()) {
+            cerr << "[Lỗi] Ghi file tạm thất bại: " << tam << endl;
+            return false;
         }
     }
 
-    fout.close();
+    error_code ec;
+    filesystem::rename(tam, duong_dan, ec);   // thay file thật bằng file tạm
+    if (ec) {
+        cerr << "[Lỗi] Không thể thay file: " << duong_dan << endl;
+        return false;
+    }
     return true;
 }
-
 // Tự động sinh mã sản phẩm tiếp theo theo chuẩn Smart ID: SP + HÃNG(2) + STT(4) + KIỂU(1)
 // Ví dụ: Đã có SPCM0001A -> Trả về SPCM0002A
 string Shop::sinh_ma_sp(const string& ma_hang, char ma_kieu) const {
