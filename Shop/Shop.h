@@ -5,17 +5,20 @@
 #include "../Vectorandheap/VECTOR.h"
 #include <string>
 #include "../doanhthu/doanhthu.h"
+#include "../Hoadon/Hoadon.h"
 using namespace std;
 
-// Kết quả của Shop::ban()
-enum KetQuaBan {
-    BAN_OK,
-    BAN_KHONG_CO_SP,
-    BAN_KHONG_CO_BIEN_THE,
-    BAN_THIEU_HANG,
-    BAN_SO_LUONG_SAI,
-    BAN_LOI_GHI_FILE,
-    BAN_NGAY_SAI           // ngày không có thật hoặc sau ngày hôm nay
+// Kết quả của Shop::thanh_toan()
+enum KetQuaThanhToan {
+    TT_OK,
+    TT_GIO_TRONG,
+    TT_THIEU_KHACH,          // chưa có mã khách (khách phải có tài khoản mới mua được)
+    TT_NGAY_SAI,             // ngày không có thật hoặc sau ngày hôm nay
+    TT_SO_LUONG_SAI,         // có dòng số lượng <= 0
+    TT_KHONG_CO_SP,
+    TT_KHONG_CO_BIEN_THE,
+    TT_THIEU_HANG,
+    TT_LOI_GHI_FILE          // không ghi được file -> đã hoàn lại kho, đơn không thành công
 };
 enum KetQuaThem {
     THEM_OK, THEM_THIEU_THONG_TIN, THEM_SAI_KIEU, THEM_KY_TU_CAM,
@@ -44,11 +47,13 @@ public:
     int  size() const;                      // Số lượng sản phẩm hiện có trong kho
     product* take(int i) const;             // Lấy con trỏ sản phẩm thứ i
     const DoanhThu& lay_doanh_thu() const { return doanh_thu; }
-    // Bán hàng: trừ kho đúng ô (màu, size). Đây là cổng DUY NHẤT để khách mua làm thay đổi tồn kho.
-    // Bán thành công thì tự ghi file ngay (trừ kho trong file txt). Ghi file lỗi -> hoàn lại kho, trả BAN_LOI_GHI_FILE
-    // (sau này gắn thêm tạo hóa đơn ở đây)
-    KetQuaBan ban(const string& id, const string& color, const string& size, int so_luong,
-              int ngay, int thang, int nam);
+    // THANH TOÁN: cổng DUY NHẤT để bán hàng. Nhận cả giỏ, được TẤT CẢ hoặc KHÔNG GÌ:
+    //   1. kiểm tra mọi dòng đủ hàng (chưa trừ gì)   2. tính giảm giá theo HẠNG của khách (hạng tính từ sổ doanh thu)
+    //   3. trừ kho, ghi item.txt (lỗi -> hoàn kho)   4. ghi cả hóa đơn vào sổ doanh thu (lỗi -> hoàn kho, lưu lại item.txt)
+    // ma_kh: bắt buộc. ma_nv: rỗng nếu khách tự mua online. Ngày: khách tự mua thì truyền ngày hôm nay.
+    // Lỗi theo dòng thì *dong_loi là chỉ số dòng trong giỏ (còn lại là -1). Thành công thì hóa đơn ở `ra`.
+    KetQuaThanhToan thanh_toan(const GioHang& gio, const string& ma_kh, const string& ma_nv,
+                               int ngay, int thang, int nam, HoaDon& ra, int* dong_loi = nullptr);
 
     // Quản lý bộ nhớ và file (Giữ nguyên)
     void clear();                           // Giải phóng toàn bộ bộ nhớ và xóa sạch danh sách

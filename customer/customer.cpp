@@ -1,150 +1,77 @@
 #include "customer.h"
+#include "../librarytucode/tienich.h"
+#include <sstream>
 
-// ======================== CONSTRUCTORS ========================
-KhachHang::KhachHang() : diemTichLuy(0), tongChiTieu(0), hangThanhVien("Bac"), dangHoatDong(true) {}
+KhachHang::KhachHang() : ngayDangKy(0), dangHoatDong(true) {}
 
-KhachHang::KhachHang(string tenKH, string maKH, string soDienThoai,
-                     string email, string diaChi, string ngayDangKy,
-                     double diemTichLuy, double tongChiTieu, string hangThanhVien, bool dangHoatDong)
-    : tenKH(tenKH), maKH(maKH), soDienThoai(soDienThoai),
-      email(email), diaChi(diaChi), ngayDangKy(ngayDangKy),
-      diemTichLuy(diemTichLuy), tongChiTieu(tongChiTieu), hangThanhVien(hangThanhVien),
-      dangHoatDong(dangHoatDong) {}
+KhachHang::KhachHang(const string &maKH, const string &tenKH, const string &sdt, const string &email,
+                     const string &diaChi, const string &matKhauDaMaHoa, long long ngayDangKy, bool dangHoatDong)
+    : maKH(maKH), tenKH(tenKH), soDienThoai(sdt), email(email), diaChi(diaChi),
+      matKhau(matKhauDaMaHoa), ngayDangKy(ngayDangKy), dangHoatDong(dangHoatDong) {}
 
-// ======================== GETTERS ========================
-string KhachHang::getTenKH() const { return tenKH; }
-string KhachHang::getMaKH() const { return maKH; }
-string KhachHang::getSoDienThoai() const { return soDienThoai; }
-string KhachHang::getEmail() const { return email; }
-string KhachHang::getDiaChi() const { return diaChi; }
-string KhachHang::getNgayDangKy() const { return ngayDangKy; }
-double KhachHang::getDiemTichLuy() const { return diemTichLuy; }
-double KhachHang::getTongChiTieu() const { return tongChiTieu; }
-string KhachHang::getHangThanhVien() const { return hangThanhVien; }
-bool KhachHang::getDangHoatDong() const { return dangHoatDong; }
-
-// ======================== SETTERS ========================
-void KhachHang::setTenKH(string ten) { tenKH = ten; }
-void KhachHang::setMaKH(string ma) { maKH = ma; }
-void KhachHang::setSoDienThoai(string sdt) { soDienThoai = sdt; }
-void KhachHang::setEmail(string mail) { email = mail; }
-void KhachHang::setDiaChi(string dc) { diaChi = dc; }
-void KhachHang::setNgayDangKy(string ngay) { ngayDangKy = ngay; }
-void KhachHang::setDiemTichLuy(double diem) { diemTichLuy = diem; }
-void KhachHang::setTongChiTieu(double tong) { tongChiTieu = tong; }
-void KhachHang::setHangThanhVien(string hang) { hangThanhVien = hang; }
-void KhachHang::setDangHoatDong(bool trangThai) { dangHoatDong = trangThai; }
-
-// ======================== NGHIEP VU ========================
-
-// Cong diem thuong sau moi lan mua hang
-void KhachHang::congDiem(double soDiem) {
-    if (soDiem > 0) {
-        diemTichLuy += soDiem;
-    }
+bool KhachHang::setTenKH(const string &ten) {
+    if (ten.empty() || co_ky_tu_cam(ten) || do_dai_utf8(ten) > RONG_KH_TEN) return false;
+    tenKH = ten;
+    return true;
+}
+bool KhachHang::setSoDienThoai(const string &sdt) {
+    if (!sdt_hop_le(sdt)) return false;
+    soDienThoai = sdt;
+    return true;
+}
+bool KhachHang::setEmail(const string &mail) {
+    if (co_ky_tu_cam(mail) || do_dai_utf8(mail) > RONG_KH_EMAIL) return false;
+    email = mail;
+    return true;
+}
+bool KhachHang::setDiaChi(const string &dc) {
+    if (co_ky_tu_cam(dc) || do_dai_utf8(dc) > RONG_KH_DIACHI) return false;
+    diaChi = dc;
+    return true;
 }
 
-// Dung diem de giam gia, tra ve true neu du diem
-bool KhachHang::suDungDiem(double soDiemDung) {
-    if (soDiemDung > 0 && soDiemDung <= diemTichLuy) {
-        diemTichLuy -= soDiemDung;
-        return true;
-    }
-    return false;
+bool KhachHang::dangNhap(const string &sdt, const string &matKhauNhap) const {
+    return dangHoatDong && soDienThoai == sdt && kiem_tra_mat_khau(matKhauNhap, matKhau);
 }
 
-// Cong tong chi tieu va tu dong cap nhat hang thanh vien
-void KhachHang::congChiTieu(double soTien) {
-    if (soTien > 0) {
-        tongChiTieu += soTien;
-        capNhatHangTV();
-    }
+bool KhachHang::doiMatKhau(const string &cu, const string &moi) {
+    if (!kiem_tra_mat_khau(cu, matKhau)) return false;
+    if ((int)moi.size() < MAT_KHAU_TOI_THIEU) return false;
+    matKhau = ma_hoa_mat_khau(moi);
+    return true;
 }
 
-// Cap nhat hang thanh vien theo tong chi tieu
-// Bac: < 2.000.000 | Vang: < 5.000.000 | BachKim: >= 5.000.000
-void KhachHang::capNhatHangTV() {
-    if (tongChiTieu >= 5000000) {
-        hangThanhVien = "BachKim";
-    } else if (tongChiTieu >= 2000000) {
-        hangThanhVien = "Vang";
-    } else {
-        hangThanhVien = "Bac";
-    }
-}
+void KhachHang::datLaiMatKhau(const string &moi) { matKhau = ma_hoa_mat_khau(moi); }
 
-// Tra ve ty le giam gia (%) theo hang thanh vien
-// Bac: 3% | Vang: 5% | BachKim: 10%
-double KhachHang::getTyLeGiamGia() const {
-    if (hangThanhVien == "BachKim") return 10.0;
-    if (hangThanhVien == "Vang") return 5.0;
-    return 3.0; // Bac
-}
-
-// Tinh so tien duoc giam gia tu 1 hoa don
-double KhachHang::tinhGiamGia(double tongHoaDon) const {
-    return tongHoaDon * getTyLeGiamGia() / 100.0;
-}
-
-// Chuyen thong tin thanh chuoi de hien thi
 string KhachHang::xuatThongTin() const {
     stringstream ss;
-    ss << "Ma KH: " << maKH
-       << " | Ten: " << tenKH
-       << " | SDT: " << soDienThoai
-       << " | Email: " << email
-       << " | Dia chi: " << diaChi
-       << " | Ngay DK: " << ngayDangKy
-       << " | Diem: " << diemTichLuy
-       << " | Tong chi: " << tongChiTieu
-       << " | Hang: " << hangThanhVien
-       << " | Giam gia: " << getTyLeGiamGia() << "%"
-       << " | Trang thai: " << (dangHoatDong ? "Hoat dong" : "Ngung");
+    ss << "Mã KH: " << maKH << " | Tên: " << tenKH << " | SĐT: " << soDienThoai
+       << " | Email: " << (email.empty() ? "-" : email) << " | Địa chỉ: " << (diaChi.empty() ? "-" : diaChi)
+       << " | Ngày ĐK: " << dinh_dang_ngay(ngayDangKy)
+       << " | " << (dangHoatDong ? "Hoạt động" : "Đã khóa");
     return ss.str();
 }
 
-// ======================== FILE I/O ========================
-// Format: moi field cach nhau boi dau '|'
-void KhachHang::ghiFile(ofstream &fout) const {
-    fout << tenKH << "|"
-         << maKH << "|"
-         << soDienThoai << "|"
-         << email << "|"
-         << diaChi << "|"
-         << ngayDangKy << "|"
-         << diemTichLuy << "|"
-         << tongChiTieu << "|"
-         << hangThanhVien << "|"
-         << dangHoatDong << endl;
+static const int RONG_COT_KH[8] = { RONG_KH_MA, RONG_KH_TEN, RONG_KH_SDT, RONG_KH_EMAIL,
+                                    RONG_KH_DIACHI, RONG_KH_MATKHAU, RONG_KH_NGAY, RONG_KH_TT };
+
+string KhachHang::tieuDe() {
+    const string cot[8] = { "maKH", "tenKH", "sdt", "email", "diachi", "matkhau", "ngayDK", "tt" };
+    return dong_bang(cot, RONG_COT_KH, 8);
 }
 
-void KhachHang::docFile(ifstream &fin) {
-    string line;
-    if (getline(fin, line)) {
-        stringstream ss(line);
-        string temp;
-        getline(ss, tenKH, '|');
-        getline(ss, maKH, '|');
-        getline(ss, soDienThoai, '|');
-        getline(ss, email, '|');
-        getline(ss, diaChi, '|');
-        getline(ss, ngayDangKy, '|');
-        getline(ss, temp, '|');
-        diemTichLuy = stod(temp);
-        getline(ss, temp, '|');
-        tongChiTieu = stod(temp);
-        getline(ss, hangThanhVien, '|');
-        getline(ss, temp, '|');
-        dangHoatDong = (temp == "1");
-    }
+string KhachHang::ghiDong() const {
+    const string cot[8] = { maKH, tenKH, soDienThoai, email, diaChi, matKhau,
+                            to_string(ngayDangKy), dangHoatDong ? "1" : "0" };
+    return dong_bang(cot, RONG_COT_KH, 8);
 }
 
-// ======================== OPERATORS ========================
-bool KhachHang::operator==(const KhachHang &other) const {
-    return maKH == other.maKH;
-}
-
-ostream& operator<<(ostream &os, const KhachHang &kh) {
-    os << kh.xuatThongTin();
-    return os;
+bool KhachHang::docDong(const string &dong, KhachHang &kh) {
+    string tok[8];
+    if (tach_dong_bang(dong, tok, 8) < 8) return false;
+    if (tok[0].empty() || !sdt_hop_le(tok[2]) || tok[5].empty()) return false;     // dòng tiêu đề cũng rơi vào đây
+    long long ngay = 0;
+    try { size_t pos = 0; ngay = stoll(tok[6], &pos); if (pos != tok[6].size()) return false; } catch (...) { return false; }
+    kh = KhachHang(tok[0], tok[1], tok[2], tok[3], tok[4], tok[5], ngay, tok[7] == "1");
+    return true;
 }

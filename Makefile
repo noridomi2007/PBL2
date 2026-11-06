@@ -3,17 +3,18 @@ CXX = g++
 CXXFLAGS = -Wall -std=c++17 -I./include
 LDFLAGS = -L./lib -lraylib -lopengl32 -lgdi32 -lwinmm -lcomdlg32
 
-# Phần dùng chung (app thật và bản test đều cần)
+# Phần lõi dùng chung (app thật và bản test đều cần).
+# wildcard: thư mục nào chưa có .cpp thì ra rỗng, không báo lỗi
 LIB_SRC = $(wildcard item/*.cpp) \
           $(wildcard Shop/*.cpp) \
           $(wildcard doanhthu/*.cpp) \
+          $(wildcard customer/*.cpp) \
+          $(wildcard staff/*.cpp) \
+          $(wildcard Hoadon/*.cpp) \
           $(wildcard dialog/*.cpp)
 
-# wildcard: thư mục nào chưa có .cpp (như Hoadon) thì ra rỗng, không báo lỗi
-SRC = $(wildcard customer/*.cpp) \
-      $(wildcard Hoadon/*.cpp) \
-      $(LIB_SRC) \
-      $(wildcard staff/*.cpp) \
+# App thật = phần lõi + giao diện
+SRC = $(LIB_SRC) \
       $(wildcard main/*.cpp) \
       $(wildcard main.cpp)
 OUT = app.exe

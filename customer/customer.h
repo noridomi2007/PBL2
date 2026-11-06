@@ -1,71 +1,65 @@
 #ifndef CUSTOMER_H
 #define CUSTOMER_H
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <string>
 using namespace std;
 
+// Độ rộng cột trong khachhang.txt, cũng là số ký tự tối đa của trường đó khi nhập.
+const int RONG_KH_MA      = 8;     // KH0001
+const int RONG_KH_TEN     = 28;
+const int RONG_KH_SDT     = 10;
+const int RONG_KH_EMAIL   = 30;
+const int RONG_KH_DIACHI  = 40;
+const int RONG_KH_MATKHAU = 25;    // muoi$bam (8 + 1 + 16), không sửa
+const int RONG_KH_NGAY    = 10;    // timestamp 10 chữ số
+const int RONG_KH_TT      = 2;     // 1 = hoạt động, 0 = khóa
+
+// Khách hàng. KHÔNG lưu tiền / hạng / điểm: tổng chi tiêu và hạng được TÍNH TỪ SỔ DOANH THU
+// (DoanhThu::tong_chi_tieu_khach + lay_hang) nên không bao giờ lệch với doanh thu thật.
+// Tên đăng nhập = số điện thoại.
 class KhachHang {
 protected:
+    string maKH;          // KH0001...
     string tenKH;
-    string maKH;
-    string soDienThoai;
+    string soDienThoai;   // 10 chữ số, duy nhất, dùng để đăng nhập
     string email;
     string diaChi;
-    string ngayDangKy;        // "dd/mm/yyyy"
-    double diemTichLuy;
-    double tongChiTieu;
-    string hangThanhVien;     // "Bac", "Vang", "BachKim"
+    string matKhau;       // đã mã hóa (xem tienich.h), không bao giờ là mật khẩu thô
+    long long ngayDangKy; // timestamp lúc đăng ký (tự động)
     bool dangHoatDong;
 
 public:
-    // Constructors
     KhachHang();
-    KhachHang(string tenKH, string maKH, string soDienThoai,
-              string email, string diaChi, string ngayDangKy,
-              double diemTichLuy, double tongChiTieu, string hangThanhVien, bool dangHoatDong);
+    KhachHang(const string &maKH, const string &tenKH, const string &sdt, const string &email,
+              const string &diaChi, const string &matKhauDaMaHoa, long long ngayDangKy, bool dangHoatDong);
 
-    // Getters
-    string getTenKH() const;
-    string getMaKH() const;
-    string getSoDienThoai() const;
-    string getEmail() const;
-    string getDiaChi() const;
-    string getNgayDangKy() const;
-    double getDiemTichLuy() const;
-    double getTongChiTieu() const;
-    string getHangThanhVien() const;
-    bool getDangHoatDong() const;
+    const string &getMaKH() const { return maKH; }
+    const string &getTenKH() const { return tenKH; }
+    const string &getSoDienThoai() const { return soDienThoai; }
+    const string &getEmail() const { return email; }
+    const string &getDiaChi() const { return diaChi; }
+    long long getNgayDangKy() const { return ngayDangKy; }
+    bool getDangHoatDong() const { return dangHoatDong; }
 
-    // Setters
-    void setTenKH(string ten);
-    void setMaKH(string ma);
-    void setSoDienThoai(string sdt);
-    void setEmail(string mail);
-    void setDiaChi(string dc);
-    void setNgayDangKy(string ngay);
-    void setDiemTichLuy(double diem);
-    void setTongChiTieu(double tong);
-    void setHangThanhVien(string hang);
-    void setDangHoatDong(bool trangThai);
+    // Setter có kiểm tra: false nếu dữ liệu không hợp lệ (rỗng khi bắt buộc, có '|' hoặc xuống dòng...)
+    bool setTenKH(const string &ten);
+    bool setSoDienThoai(const string &sdt);
+    bool setEmail(const string &mail);
+    bool setDiaChi(const string &dc);
+    void setDangHoatDong(bool tt) { dangHoatDong = tt; }
 
-    // Nghiep vu
-    void congDiem(double soDiem);
-    bool suDungDiem(double soDiemDung);
-    void congChiTieu(double soTien);
-    void capNhatHangTV();
-    double getTyLeGiamGia() const;
-    double tinhGiamGia(double tongHoaDon) const;
+    // Mật khẩu
+    bool dangNhap(const string &sdt, const string &matKhauNhap) const;   // đúng SĐT + mật khẩu + tài khoản đang hoạt động
+    bool doiMatKhau(const string &cu, const string &moi);                // phải đúng mật khẩu cũ
+    void datLaiMatKhau(const string &moi);                               // admin cấp lại (không cần mật khẩu cũ)
+
     string xuatThongTin() const;
 
-    // File I/O
-    void ghiFile(ofstream &fout) const;
-    void docFile(ifstream &fin);
+    // File dạng bảng thẳng hàng, mỗi khách 1 dòng:  | maKH | tenKH | sdt | email | diaChi | matKhau | ngayDK | tt |
+    static string tieuDe();     // dòng tiêu đề của bảng
+    string ghiDong() const;
+    static bool docDong(const string &dong, KhachHang &kh);   // false nếu dòng hỏng hoặc là tiêu đề; đọc được cả dạng cũ a|b|c
 
-    // Operators
-    bool operator==(const KhachHang &other) const;
-    friend ostream& operator<<(ostream &os, const KhachHang &kh);
+    bool operator==(const KhachHang &o) const { return maKH == o.maKH; }
 };
 
 #endif

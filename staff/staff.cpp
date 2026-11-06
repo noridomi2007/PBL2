@@ -1,123 +1,84 @@
 #include "staff.h"
+#include "../librarytucode/tienich.h"
+#include <sstream>
 
-// ======================== CONSTRUCTORS ========================
-NhanVien::NhanVien() : doanhSo(0), dangLamViec(true) {}
+NhanVien::NhanVien() : vaiTro(VAI_TRO_NHAN_VIEN), ngayVaoLam(0), dangLamViec(true) {}
 
-NhanVien::NhanVien(string tenNV, string maNV, string soDienThoai,
-                   string email, string diaChi, string matKhau,
-                   string vaiTro, string ngayVaoLam, int doanhSo, bool dangLamViec)
-    : tenNV(tenNV), maNV(maNV), soDienThoai(soDienThoai),
-      email(email), diaChi(diaChi), matKhau(matKhau),
-      vaiTro(vaiTro), ngayVaoLam(ngayVaoLam), doanhSo(doanhSo),
-      dangLamViec(dangLamViec) {}
+NhanVien::NhanVien(const string &maNV, const string &tenNV, const string &sdt, const string &email,
+                   const string &diaChi, const string &matKhauDaMaHoa, const string &vaiTro,
+                   long long ngayVaoLam, bool dangLamViec)
+    : maNV(maNV), tenNV(tenNV), soDienThoai(sdt), email(email), diaChi(diaChi),
+      matKhau(matKhauDaMaHoa), vaiTro(vaiTro), ngayVaoLam(ngayVaoLam), dangLamViec(dangLamViec) {}
 
-// ======================== GETTERS ========================
-string NhanVien::getTenNV() const { return tenNV; }
-string NhanVien::getMaNV() const { return maNV; }
-string NhanVien::getSoDienThoai() const { return soDienThoai; }
-string NhanVien::getEmail() const { return email; }
-string NhanVien::getDiaChi() const { return diaChi; }
-string NhanVien::getVaiTro() const { return vaiTro; }
-string NhanVien::getNgayVaoLam() const { return ngayVaoLam; }
-int NhanVien::getDoanhSo() const { return doanhSo; }
-bool NhanVien::getDangLamViec() const { return dangLamViec; }
-
-// ======================== SETTERS ========================
-void NhanVien::setTenNV(string ten) { tenNV = ten; }
-void NhanVien::setMaNV(string ma) { maNV = ma; }
-void NhanVien::setSoDienThoai(string sdt) { soDienThoai = sdt; }
-void NhanVien::setEmail(string mail) { email = mail; }
-void NhanVien::setDiaChi(string dc) { diaChi = dc; }
-void NhanVien::setMatKhau(string mk) { matKhau = mk; }
-void NhanVien::setVaiTro(string vt) { vaiTro = vt; }
-void NhanVien::setNgayVaoLam(string ngay) { ngayVaoLam = ngay; }
-void NhanVien::setDoanhSo(int ds) { doanhSo = ds; }
-void NhanVien::setDangLamViec(bool trangThai) { dangLamViec = trangThai; }
-
-// ======================== NGHIEP VU ========================
-
-// Xac thuc dang nhap: tra ve true neu ma NV va mat khau dung
-bool NhanVien::dangNhap(string maDN, string matKhauDN) const {
-    return (maNV == maDN && matKhau == matKhauDN && dangLamViec);
+bool NhanVien::setTenNV(const string &ten) {
+    if (ten.empty() || co_ky_tu_cam(ten) || do_dai_utf8(ten) > RONG_NV_TEN) return false;
+    tenNV = ten;
+    return true;
+}
+bool NhanVien::setSoDienThoai(const string &sdt) {
+    if (!sdt_hop_le(sdt)) return false;
+    soDienThoai = sdt;
+    return true;
+}
+bool NhanVien::setEmail(const string &mail) {
+    if (co_ky_tu_cam(mail) || do_dai_utf8(mail) > RONG_NV_EMAIL) return false;
+    email = mail;
+    return true;
+}
+bool NhanVien::setDiaChi(const string &dc) {
+    if (co_ky_tu_cam(dc) || do_dai_utf8(dc) > RONG_NV_DIACHI) return false;
+    diaChi = dc;
+    return true;
+}
+bool NhanVien::setVaiTro(const string &vt) {
+    if (vt != VAI_TRO_ADMIN && vt != VAI_TRO_NHAN_VIEN) return false;
+    vaiTro = vt;
+    return true;
 }
 
-// Doi mat khau: can nhap dung mat khau cu
-bool NhanVien::doiMatKhau(string matKhauCu, string matKhauMoi) {
-    if (matKhau == matKhauCu && !matKhauMoi.empty()) {
-        matKhau = matKhauMoi;
-        return true;
-    }
-    return false;
+bool NhanVien::dangNhap(const string &maDN, const string &matKhauNhap) const {
+    return dangLamViec && maNV == maDN && kiem_tra_mat_khau(matKhauNhap, matKhau);
 }
 
-// Cong doanh so ban hang
-void NhanVien::congDoanhSo(int soTien) {
-    if (soTien > 0) {
-        doanhSo += soTien;
-    }
+bool NhanVien::doiMatKhau(const string &cu, const string &moi) {
+    if (!kiem_tra_mat_khau(cu, matKhau)) return false;
+    if ((int)moi.size() < MAT_KHAU_TOI_THIEU) return false;
+    matKhau = ma_hoa_mat_khau(moi);
+    return true;
 }
 
-// Kiem tra co phai admin khong
-bool NhanVien::laAdmin() const {
-    return (vaiTro == "admin");
-}
+void NhanVien::datLaiMatKhau(const string &moi) { matKhau = ma_hoa_mat_khau(moi); }
 
-// Chuyen thong tin thanh chuoi de hien thi
 string NhanVien::xuatThongTin() const {
     stringstream ss;
-    ss << "Ma NV: " << maNV
-       << " | Ten: " << tenNV
-       << " | SDT: " << soDienThoai
-       << " | Email: " << email
-       << " | Dia chi: " << diaChi
-       << " | Vai tro: " << vaiTro
-       << " | Ngay vao lam: " << ngayVaoLam
-       << " | Doanh so: " << doanhSo
-       << " | Trang thai: " << (dangLamViec ? "Dang lam" : "Da nghi");
+    ss << "Mã NV: " << maNV << " | Tên: " << tenNV << " | SĐT: " << soDienThoai
+       << " | Vai trò: " << (laAdmin() ? "Quản trị" : "Nhân viên")
+       << " | Vào làm: " << dinh_dang_ngay(ngayVaoLam)
+       << " | " << (dangLamViec ? "Đang làm" : "Đã nghỉ");
     return ss.str();
 }
 
-// ======================== FILE I/O ========================
-// Format: moi field cach nhau boi dau '|'
-void NhanVien::ghiFile(ofstream &fout) const {
-    fout << tenNV << "|"
-         << maNV << "|"
-         << soDienThoai << "|"
-         << email << "|"
-         << diaChi << "|"
-         << matKhau << "|"
-         << vaiTro << "|"
-         << ngayVaoLam << "|"
-         << doanhSo << "|"
-         << dangLamViec << endl;
+static const int RONG_COT_NV[9] = { RONG_NV_MA, RONG_NV_TEN, RONG_NV_SDT, RONG_NV_EMAIL, RONG_NV_DIACHI,
+                                    RONG_NV_MATKHAU, RONG_NV_VAITRO, RONG_NV_NGAY, RONG_NV_TT };
+
+string NhanVien::tieuDe() {
+    const string cot[9] = { "maNV", "tenNV", "sdt", "email", "diachi", "matkhau", "vaitro", "ngayVL", "tt" };
+    return dong_bang(cot, RONG_COT_NV, 9);
 }
 
-void NhanVien::docFile(ifstream &fin) {
-    string line;
-    if (getline(fin, line)) {
-        stringstream ss(line);
-        string temp;
-        getline(ss, tenNV, '|');
-        getline(ss, maNV, '|');
-        getline(ss, soDienThoai, '|');
-        getline(ss, email, '|');
-        getline(ss, diaChi, '|');
-        getline(ss, matKhau, '|');
-        getline(ss, vaiTro, '|');
-        getline(ss, ngayVaoLam, '|');
-        getline(ss, temp, '|');
-        doanhSo = stoi(temp);
-        getline(ss, temp, '|');
-        dangLamViec = (temp == "1");
-    }
+string NhanVien::ghiDong() const {
+    const string cot[9] = { maNV, tenNV, soDienThoai, email, diaChi, matKhau, vaiTro,
+                            to_string(ngayVaoLam), dangLamViec ? "1" : "0" };
+    return dong_bang(cot, RONG_COT_NV, 9);
 }
 
-// ======================== OPERATORS ========================
-bool NhanVien::operator==(const NhanVien &other) const {
-    return maNV == other.maNV;
-}
-
-ostream& operator<<(ostream &os, const NhanVien &nv) {
-    os << nv.xuatThongTin();
-    return os;
+bool NhanVien::docDong(const string &dong, NhanVien &nv) {
+    string tok[9];
+    if (tach_dong_bang(dong, tok, 9) < 9) return false;
+    if (tok[0].empty() || !sdt_hop_le(tok[2]) || tok[5].empty()) return false;     // dòng tiêu đề cũng rơi vào đây
+    if (tok[6] != VAI_TRO_ADMIN && tok[6] != VAI_TRO_NHAN_VIEN) return false;
+    long long ngay = 0;
+    try { size_t pos = 0; ngay = stoll(tok[7], &pos); if (pos != tok[7].size()) return false; } catch (...) { return false; }
+    nv = NhanVien(tok[0], tok[1], tok[2], tok[3], tok[4], tok[5], tok[6], ngay, tok[8] == "1");
+    return true;
 }

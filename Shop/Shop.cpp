@@ -1,5 +1,7 @@
 #include "Shop.h"
 #include "../librarytucode/Libtiengviet.h"
+#include "../librarytucode/tienich.h"
+#include "../customer/hangtv.h"
 #include <fstream>
 #include <filesystem>
 #include <ctime> 
@@ -33,10 +35,7 @@ static bool da_ton_tai(const VECTOR<string>& list, const string& item) {
     return false;
 }
 
-// Ký tự '|' và xuống dòng sẽ làm hỏng cấu trúc bảng item.txt
-static bool co_ky_tu_cam(const string &s) {
-    return s.find_first_of("|\r\n") != string::npos;
-}
+// co_ky_tu_cam() nằm trong librarytucode/tienich.h (dùng chung với customer, staff)
 
 // =========================================================================
 // CONSTRUCTOR & DESTRUCTOR
@@ -126,50 +125,98 @@ product* Shop::take(int i) const {
 }
 
 
-// Bán hàng: kiểm tra rồi trừ kho đúng ô (màu, size)
-KetQuaBan Shop::ban(const string& id, const string& color, const string& size, int so_luong,
-                    int ngay, int thang, int nam) {
-    if (so_luong <= 0) return BAN_SO_LUONG_SAI;
-
-    // Kiểm tra ngày TRƯỚC khi đụng vào kho
+// Thanh toán cả giỏ: được tất cả hoặc không gì (xem mô tả trong Shop.h)
+KetQuaThanhToan Shop::thanh_toan(const GioHang& gio, const string& ma_kh, const string& ma_nv,
+                                 int ngay, int thang, int nam, HoaDon& ra, int* dong_loi) {
+    if (dong_loi) *dong_loi = -1;
+    if (gio.empty()) return TT_GIO_TRONG;
+    if (ma_kh.empty()) return TT_THIEU_KHACH;
     long long thoi_gian;
-    if (!tao_thoi_gian(ngay, thang, nam, thoi_gian)) return BAN_NGAY_SAI;
+    if (!tao_thoi_gian(ngay, thang, nam, thoi_gian)) return TT_NGAY_SAI;
 
-    int vi_tri = find(id);
-    if (vi_tri == -1) return BAN_KHONG_CO_SP;
+    // ---- Bước 1: kiểm tra mọi dòng, gom nhu cầu theo từng ô (sản phẩm, màu, size) ----
+    // Hai dòng giỏ khác cách gõ ("Đen" / "den") nhưng cùng 1 ô vẫn được cộng chung để không bán lố kho
+    struct Cho { int sp; int vr; int can; };
+    VECTOR<Cho> cho;
+    VECTOR<int> cho_cua_dong;
+    for (int i = 0; i < gio.so_dong(); i++) {
+        const DongGio& d = gio.lay(i);
+        if (d.sl <= 0) { if (dong_loi) *dong_loi = i; return TT_SO_LUONG_SAI; }
+        int sp = find(d.idsp);
+        if (sp == -1) { if (dong_loi) *dong_loi = i; return TT_KHONG_CO_SP; }
+        int vr = ds[sp]->tim_variant(d.color, d.size);
+        if (vr == -1) { if (dong_loi) *dong_loi = i; return TT_KHONG_CO_BIEN_THE; }
 
-    product* p = ds[vi_tri];
-    int vt = p->tim_variant(color, size);
-    if (vt == -1) return BAN_KHONG_CO_BIEN_THE;
+        int k = -1;
+        for (int j = 0; j < cho.size(); j++) if (cho[j].sp == sp && cho[j].vr == vr) { k = j; break; }
+        if (k == -1) { Cho c; c.sp = sp; c.vr = vr; c.can = d.sl; cho.push_back(c); k = cho.size() - 1; }
+        else cho[k].can += d.sl;
+        cho_cua_dong.push_back(k);
+    }
+    for (int k = 0; k < cho.size(); k++) {
+        if (ds[cho[k].sp]->get_variant(cho[k].vr).sl < cho[k].can) {
+            if (dong_loi) { for (int i = 0; i < cho_cua_dong.size(); i++) if (cho_cua_dong[i] == k) { *dong_loi = i; break; } }
+            return TT_THIEU_HANG;
+        }
+    }
 
-    // Lấy màu/size đúng như đang lưu (tránh lệch hoa thường) trước khi trừ kho
-    string color_chuan = p->get_variant(vt).color;
-    string size_chuan  = p->get_variant(vt).size;
+    // ---- Bước 2: dựng các dòng hóa đơn với giảm giá theo hạng (hạng tính trên số đã chi TRƯỚC đơn này) ----
+    const HangTV& hang = lay_hang(doanh_thu.tong_chi_tieu_khach(ma_kh));
+    string ma_hd = doanh_thu.ma_hd_tiep_theo();
+    VECTOR<GiaoDich> dong;
+    for (int i = 0; i < gio.so_dong(); i++) {
+        const DongGio& d = gio.lay(i);
+        product* p = ds[cho[cho_cua_dong[i]].sp];
+        const Variant& v = p->get_variant(cho[cho_cua_dong[i]].vr);
+        GiaoDich g;
+        g.thoi_gian = thoi_gian;
+        g.idsp = p->getid();
+        g.ten = p->getname();
+        g.color = v.color;
+        g.size = v.size;
+        g.sl = d.sl;
+        g.don_gia = p->getprice();
+        g.ma_hd = ma_hd;
+        g.ma_kh = ma_kh;
+        g.ma_nv = ma_nv;
+        g.giam_gia = tinh_giam_gia_dong(hang, g.don_gia, g.sl);
+        dong.push_back(g);
+    }
 
-    if (!p->tru_kho(color, size, so_luong)) return BAN_THIEU_HANG;
-
-    // Lưu kho xuống file; lỗi thì hoàn kho để RAM và file không lệch nhau
+    // ---- Bước 3: trừ kho (nhớ lại để hoàn nếu có lỗi), ghi item.txt ----
+    for (int k = 0; k < cho.size(); k++) {
+        product* p = ds[cho[k].sp];
+        string mau = p->get_variant(cho[k].vr).color, size = p->get_variant(cho[k].vr).size;
+        p->tru_kho(mau, size, cho[k].can);
+    }
+    auto hoan_kho = [&]() {
+        for (int k = 0; k < cho.size(); k++) {
+            product* p = ds[cho[k].sp];
+            string mau = p->get_variant(cho[k].vr).color, size = p->get_variant(cho[k].vr).size;
+            p->them_variant(mau, size, cho[k].can);
+        }
+    };
     if (!ghi_file(file_hien_tai)) {
-        p->them_variant(color, size, so_luong);
-        return BAN_LOI_GHI_FILE;
+        hoan_kho();
+        return TT_LOI_GHI_FILE;
     }
 
-    // Ghi sổ doanh thu với ngày người dùng nhập; lỗi thì hoàn kho và lưu lại file kho
-    GiaoDich g;
-    g.thoi_gian = thoi_gian;
-    g.idsp = p->getid();
-    g.ten = p->getname();
-    g.color = color_chuan;
-    g.size = size_chuan;
-    g.sl = so_luong;
-    g.don_gia = p->getprice();
-    if (!doanh_thu.them(g)) {
-        p->them_variant(color, size, so_luong);
+    // ---- Bước 4: ghi cả hóa đơn vào sổ doanh thu. Đây là "điểm chốt": ghi xong là đơn đã thành công ----
+    if (!doanh_thu.them_nhieu(dong)) {
+        hoan_kho();
         ghi_file(file_hien_tai);
-        return BAN_LOI_GHI_FILE;
+        return TT_LOI_GHI_FILE;
     }
-    return BAN_OK;
+
+    ra = HoaDon();
+    ra.ma_hd = ma_hd;
+    ra.ma_kh = ma_kh;
+    ra.ma_nv = ma_nv;
+    ra.thoi_gian = thoi_gian;
+    ra.dong = dong;
+    return TT_OK;
 }
+
     static bool qua_dai(const string &s, int toi_da) {
         return len_utf8(s.c_str()) > toi_da;   // đếm ký tự, không đếm byte
 }
@@ -244,6 +291,7 @@ void Shop::clear() {
 
 // Đọc toàn bộ danh sách sản phẩm từ file item.txt
 bool Shop::doc_file(const string& duong_dan) {
+    doanh_thu.doc_file();   // sổ doanh thu độc lập với item.txt nên luôn nạp
     ifstream fin(duong_dan);
     if (!fin.is_open()) {
         cerr << "[Lỗi] Không thể mở file: " << duong_dan << endl;
@@ -275,8 +323,7 @@ bool Shop::doc_file(const string& duong_dan) {
     }
 
     fin.close();
-    file_hien_tai = duong_dan; // nhớ file này để ban() ghi lại đúng chỗ
-    doanh_thu.doc_file(); 
+    file_hien_tai = duong_dan; // nhớ file này để thanh_toan() ghi lại đúng chỗ
     return true;
 }
 
