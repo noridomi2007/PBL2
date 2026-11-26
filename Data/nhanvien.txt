@@ -1,3 +1,4 @@
-| maNV     | tenNV                        | sdt        | email                          | diaChi                                   | matKhau                   | vaiTro   | ngayVL     | tt |
-| NV0001   | Quản trị viên                | 0000000000 |                                |                                          | 22ca428b$74b6fc5715137eac | admin    | 1793933339 | 1  |
-| NV0002   | Nguyễn Đăng Hoàn             | 0763573889 |                                |                                          | 76e9af09$71d3497e11cd4db8 | nhanvien | 1793933809 | 1  |
+| maNV     | tenNV                        | sdt        | email                          | diachi                                                                           | matkhau                   | vaitro   | ngayVL     | tt |
+| NV0001   | Quản trị viên                | 0000000000 |                                |                                                                                  | 22ca428b$74b6fc5715137eac | admin    | 1793933339 | 1  |
+| NV0002   | Nguyễn Đăng Hoàn             | 0763573889 |                                |                                                                                  | d84ac1c6$66279b5b769aedbb | nhanvien | 1793933809 | 1  |
+| NV0003   | Lê Doãn Hồng Phúc            | 0941330933 |                                |                                                                                  | b5b61568$7a2c74e632ddb16b | nhanvien | 1795707902 | 1  |

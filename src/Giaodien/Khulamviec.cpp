@@ -190,6 +190,10 @@ void App::ve_pos(Rectangle view) {
     panel(kh_r, 20);
     text(F.m13, "KHÁCH HÀNG", rx + 22, ry + 20, MUTED, 1.6f);
     long long chi = 0;
+    if (pos_kh >= 0 && pos_kh < qk.size() && !qk.lay(pos_kh).getDangHoatDong()) {
+    pos_kh = -1;
+    toast("Tài khoản của khách này đã bị khóa, hãy chọn khách khác.", TOAST_ERR);
+}
     if (pos_kh >= 0 && pos_kh < qk.size()) {
         const KhachHang &k = qk.lay(pos_kh);
         chi = shop.lay_doanh_thu().tong_chi_tieu_khach(k.getMaKH());
@@ -260,7 +264,7 @@ void App::ve_pos(Rectangle view) {
         else {
             int dl = -1; HoaDon hd;
             KetQuaThanhToan r = shop.thanh_toan(gio_pos, qk.lay(pos_kh).getMaKH(), ma, d, m, yy, hd, &dl);
-            if (r == TT_OK) { hd_cuoi = hd; gio_pos.lam_rong(); pos_dirty = true; modal = M_INVOICE; }
+            if (r == TT_OK) { hd_cuoi = hd; gio_pos.lam_rong(); pos_dirty = true; kho_dirty = true; can_loc = true; modal = M_INVOICE; }
             else if (r == TT_NGAY_SAI) toast("Ngày bán không có thật hoặc sau ngày hôm nay.", TOAST_ERR);
             else if (r == TT_THIEU_HANG) toast("Không đủ hàng ở dòng " + std::to_string(dl + 1) + " của đơn.", TOAST_ERR);
             else toast("Không thanh toán được (mã lỗi " + std::to_string((int)r) + ").", TOAST_ERR);

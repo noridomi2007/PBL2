@@ -4,3 +4,10 @@
 | 1795669200 | SPCM0002A | Áo Hoodie chống nắng nam Quick Dry Sun Protection UPF50 S-3XL    | Xanh             | 2XL      | 1     | 129000      | HD000002 | KH0001   |          | 0           |
 | 1795669200 | SPCM0002A | Áo Hoodie chống nắng nam Quick Dry Sun Protection UPF50 S-3XL    | Xanh             | 2XL      | 1     | 129000      | HD000003 | KH0002   |          | 0           |
 | 1795669200 | SPLV0001D | Đồng hồ ABC                                                      | Bạc              | 40mm     | 1     | 10190000    | HD000004 | KH0001   |          | 0           |
+| 1795669200 | SPAD0001M | Mũ Lưỡi Trai Thể Thao                                            | Đen              | Free     | 1     | 250000      | HD000005 | KH0002   | NV0002   | 0           |
+| 1795669200 | SPCM0001A | Áo Thun Trơn Cổ Tròn                                             | Đen              | XL       | 1     | 189000      | HD000006 | KH0002   | NV0002   | 0           |
+| 1795669200 | SPCM0003A | Áo khoác thể thao Windbreaker Ripstop S-3XL                      | Xanh             | 2XL      | 1     | 499000      | HD000007 | KH0002   | NV0002   | 0           |
+| 1795669200 | SPAG0001X | Vòng Tay Trầm Hương                                              | Nâu              | 16cm     | 1     | 450000      | HD000008 | KH0002   | NV0001   | 0           |
+| 1795669200 | SPCM0001A | Áo Thun Trơn Cổ Tròn                                             | Đen              | XL       | 1     | 189000      | HD000009 | KH0002   | NV0001   | 0           |
+| 1795755600 | SPCM0002A | Áo Hoodie chống nắng nam Quick Dry Sun Protection UPF50 S-3XL    | Xanh             | 2XL      | 3     | 129000      | HD000010 | KH0001   | NV0002   | 116100      |
+| 1795755600 | SPCM0003A | Áo khoác thể thao Windbreaker Ripstop S-3XL                      | Xanh             | 2XL      | 3     | 499000      | HD000011 | KH0001   | NV0002   | 449100      |
