@@ -22,6 +22,9 @@ private:
 
     // Tìm nút thứ i: đi từ điểm gần nhất trong 3 điểm đầu / cuối / vị trí vừa truy cập
     Node *nut_tai(int i) const {
+        if (n == 0) return nullptr;
+        if (i < 0) i = 0;
+        if (i >= n) i = n - 1;
         Node *p;
         int vi;
         int d_dau = i, d_cuoi = n - 1 - i;

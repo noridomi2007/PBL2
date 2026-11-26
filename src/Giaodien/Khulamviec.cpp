@@ -343,8 +343,14 @@ void App::ve_kho(Rectangle view, bool admin) {
     }
     y += 84 + 22;
 
-    TieuChiLoc t; t.tu_khoa = f_kho_tim.utf8();
-    VECTOR<KetQuaLoc> ds = loc_cua_hang(shop, bst, t);
+    std::string kq_tk = f_kho_tim.utf8();
+    int n_gd = shop.lay_doanh_thu().so_giao_dich();   // có bán hàng thì tồn kho đổi
+    if (kq_tk != kho_q_cu || n_gd != kho_n_cu || kho_dirty) {
+        TieuChiLoc t; t.tu_khoa = kq_tk;
+        kho_kq = loc_cua_hang(shop, bst, t);
+        kho_q_cu = kq_tk; kho_n_cu = n_gd; kho_dirty = false;
+    }
+    const VECTOR<KetQuaLoc> &ds = kho_kq;
     for (int i = 0; i < ds.size(); i++) {
         product *p = ds[i].sp;
         bool mo = kho_mo == p->getid();
@@ -457,7 +463,7 @@ void App::ve_nhan_vien(Rectangle view) {
         panel(r, 18);
         bool ad = n.laAdmin();
         DrawCircleV(Vector2{ r.x + 44, r.y + 40 }, 24, ad ? LAVBG : MINTBG);
-        text_c(F.b17, hoa(to_utf8(std::u32string(1, to_u32(n.getTenNV())[0]))), Rectangle{ r.x + 20, r.y + 16, 48, 48 }, ad ? Color{ 110, 100, 200, 255 } : Color{ 40, 150, 110, 255 });
+        text_c(F.b17, hoa(n.getTenNV().empty() ? std::string("?") : to_utf8(std::u32string(1, to_u32(n.getTenNV())[0]))), Rectangle{ r.x + 20, r.y + 16, 48, 48 }, ad ? Color{ 110, 100, 200, 255 } : Color{ 40, 150, 110, 255 });
         text(F.b17, fit(F.b17, n.getTenNV(), w * 0.3f), r.x + 84, r.y + 20, INK);
         text(F.r13, n.getMaNV() + "   -   " + n.getSoDienThoai(), r.x + 84, r.y + 48, MUTED);
         float tx = tag_auto(r.x + 84, r.y + 74, 26, ad ? "Admin" : "Nhân viên", ad ? Color{ 110, 100, 200, 255 } : Color{ 40, 150, 110, 255 }, ad ? LAVBG : MINTBG, F.m13);

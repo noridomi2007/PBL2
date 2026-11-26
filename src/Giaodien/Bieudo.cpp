@@ -46,8 +46,8 @@ long long lam_tron_tren(long long v) {   // 7.300.000 -> 8.000.000 (để trục
 const Color MAU_CHART[12] = { {66, 158, 228, 255}, {164, 156, 232, 255}, {86, 184, 146, 255}, {245, 176, 110, 255},
                               {240, 150, 176, 255}, {112, 205, 224, 255}, {236, 206, 96, 255}, {150, 170, 196, 255},
                               {120, 120, 214, 255}, {140, 210, 160, 255}, {230, 120, 120, 255}, {196, 170, 130, 255} };
-
-struct BoNho { int dk = -1; long long khoa = -1; int n = -1; std::vector<Cot> cot; long long hd = 0, sl = 0; };
+struct BoNho { int dk = -1; long long khoa = -1; int n = -1; std::vector<Cot> cot; long long hd = 0, sl = 0;
+               VECTOR<DoanhThuSP> top_sp; VECTOR<DoanhThuNV> top_nv; };
 BoNho nho;
 }
 
@@ -72,6 +72,8 @@ void App::ve_doanh_thu(Rectangle view) {
             else if (!da.contains(g.ma_hd)) { da.put(g.ma_hd, 1); dem++; }
         }
         nho.hd = dem;
+        nho.top_sp = dt.top_san_pham(dt_ky, dt_khoa, 5);
+        nho.top_nv = dt.top_nhan_vien(dt_ky, dt_khoa, 5);
     }
     std::vector<Cot> &cot = nho.cot;
     long long cur = 0, truoc = 0;
@@ -101,8 +103,16 @@ void App::ve_doanh_thu(Rectangle view) {
     int huong = bam_l ? -1 : (bam_r && co_sau ? 1 : 0);
     if (huong != 0) {
         long long nk = dt_khoa;
-        if (dt_ky == KY_THANG) { long long ny = dt_khoa / 100 + huong; nk = ny * 100 + dt_khoa % 100; }
-        else if (dt_ky == KY_QUY) { long long ny = dt_khoa / 10 + huong; nk = ny * 10 + dt_khoa % 10; }
+        if (dt_ky == KY_THANG) {
+            long long ny = dt_khoa / 100, th = dt_khoa % 100 + huong;
+            if (th < 1) { th = 12; ny--; } else if (th > 12) { th = 1; ny++; }
+            nk = ny * 100 + th;
+        }
+        else if (dt_ky == KY_QUY) {
+            long long ny = dt_khoa / 10, q = dt_khoa % 10 + huong;
+            if (q < 1) { q = 4; ny--; } else if (q > 4) { q = 1; ny++; }
+            nk = ny * 10 + q;
+        }
         else if (dt_ky == KY_NAM) nk = dt_khoa + huong;
         else nk = lay_khoa_ky(ts_tu_khoa_tuan(dt_khoa) + huong * 7LL * 86400, KY_TUAN);
         if (nk <= hien) dt_doi_ky(dt_ky, nk);
@@ -261,7 +271,7 @@ void App::ve_doanh_thu(Rectangle view) {
     panel(tp, 20);
     text(F.s22, "Top sản phẩm", tp.x + 24, tp.y + 22, INK);
     text(F.r13, ten_k, tp.x + 24, tp.y + 54, MUTED);
-    VECTOR<DoanhThuSP> top = dt.top_san_pham(dt_ky, dt_khoa, 5);
+    const VECTOR<DoanhThuSP> &top = nho.top_sp;
     float ty = tp.y + 88;
     for (int i = 0; i < top.size(); i++) {
         float tl = top[0].tong > 0 ? (float)top[i].tong / (float)top[0].tong : 0;
@@ -276,7 +286,7 @@ void App::ve_doanh_thu(Rectangle view) {
 
     float y2 = y + 430 + 22;
     Rectangle np = { x, y2, w, 60 + 6 };
-    VECTOR<DoanhThuNV> tnv = dt.top_nhan_vien(dt_ky, dt_khoa, 5);
+    const VECTOR<DoanhThuNV> &tnv = nho.top_nv;
     np.height = 78 + (tnv.size() > 0 ? tnv.size() * 46.0f : 50.0f) + 12;
     panel(np, 20);
     text(F.s22, "Doanh số nhân viên", np.x + 26, np.y + 22, INK);

@@ -1,26 +1,7 @@
 #include "Boloc.h"
 #include "../Tienich/Tiengviet.h"
+#include "../Tienich/Sapxep.h"
 
-// Sắp xếp trộn (merge sort) ổn định trên VECTOR: các phần tử bằng nhau giữ nguyên thứ tự cũ.
-// Dùng thay cho sắp xếp nổi bọt O(n^2) để danh sách lớn vẫn mượt.
-template <typename T, typename Truoc>
-static void sap_xep_tron(VECTOR<T> &a, Truoc truoc) {
-    int n = a.size();
-    if (n < 2) return;
-    VECTOR<T> tam;
-    for (int i = 0; i < n; i++) tam.push_back(a[i]);
-    for (int rong = 1; rong < n; rong *= 2) {
-        for (int lo = 0; lo < n; lo += 2 * rong) {
-            int mid = lo + rong < n ? lo + rong : n;
-            int hi = lo + 2 * rong < n ? lo + 2 * rong : n;
-            int i = lo, j = mid, k = lo;
-            while (i < mid && j < hi) tam[k++] = truoc(a[j], a[i]) ? a[j++] : a[i++];   // chỉ lấy bên phải khi NÓ đứng trước hẳn
-            while (i < mid) tam[k++] = a[i++];
-            while (j < hi) tam[k++] = a[j++];
-        }
-        for (int i = 0; i < n; i++) a[i] = tam[i];
-    }
-}
 
 VECTOR<KetQuaLoc> loc_cua_hang(const Shop &shop, const BoSuuTap &bst, const TieuChiLoc &tc) {
     long long gmin = tc.gia_min, gmax = tc.gia_max;

@@ -129,14 +129,20 @@ private:
 
     // kho / sản phẩm
     ui::Field f_kho_tim;
+    std::string kho_q_cu;
+    VECTOR<KetQuaLoc> kho_kq;
+    int kho_n_cu = -1;
+    bool kho_dirty = true;
     std::string kho_mo;                                      // sản phẩm đang mở rộng
     std::string md_ma;                                       // sản phẩm đang thao tác trong hộp thoại
     int nk_che_do = 0;                                       // 0 nhập thêm, 1 kiểm kê
     ui::Field f_nk_mau, f_nk_size, f_nk_sl;
     ui::Field f_sp_gia, f_sp_bst;
+    std::string cung_ma_cu; int cung_n_cu = -1;
+    VECTOR<std::string> cung_ids;
     // thêm sản phẩm
     int ap_hang = 0, ap_kieu = 0;
-    ui::Field f_ap_hang_khac, f_ap_ten, f_ap_kieu_ct, f_ap_gia, f_ap_chat_lieu, f_ap_bst;
+    ui::Field f_ap_hang_khac, f_ap_ten, f_ap_kieu_ct, f_ap_gia, f_ap_chat_lieu, f_ap_bst, f_ap_kich_thuoc;
     ui::Field f_ap_mau[6], f_ap_size[6], f_ap_sl[6];
     std::vector<std::string> ap_anh;
     int ap_rows = 1;

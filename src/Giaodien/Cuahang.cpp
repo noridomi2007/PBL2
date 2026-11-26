@@ -101,9 +101,10 @@ void App::ve_dau_trang() {
     float uw = tw(F.m15, nhan) + 62;
     Rectangle ur = { gr.x - 12 - uw, 46, uw, 46 };
     bool hu = hover(ur);
+    bool vua_mo = false;   // đánh dấu menu vừa được mở ở khung hình này
     if (hu) { C.hand = true; rrect(ur, 23, SKY50); }
     if (hu && C.pressed) {
-        if (role == R_CUSTOMER) menu_mo = !menu_mo;
+        if (role == R_CUSTOMER) { menu_mo = !menu_mo; vua_mo = menu_mo; }
         else { quay_lai = screen; tab_dn = 0; doi_man(S_LOGIN); }
     }
     if (role == R_CUSTOMER) {
@@ -159,7 +160,7 @@ void App::ve_dau_trang() {
                 C.pressed = false;
             }
         }
-        if (C.pressed && !CheckCollisionPointRec(C.mouse, m)) menu_mo = false;
+        if (C.pressed && !vua_mo && !CheckCollisionPointRec(C.mouse, m)) menu_mo = false;
         C.blocked = khoa;
     }
 }
@@ -627,6 +628,9 @@ void App::ve_chi_tiet(Rectangle view) {
     thong_tin("Mã sản phẩm", p->getid());
     thong_tin("Loại", p->getsubtype() + (p->getkieu() == p->getsubtype() ? "" : "  /  " + p->getkieu()));
     thong_tin("Chất liệu", p->xuat_thong_tin().empty() ? "-" : (dynamic_cast<clothing *>(p) ? dynamic_cast<clothing *>(p)->getmaterial() : (dynamic_cast<accessory *>(p) ? dynamic_cast<accessory *>(p)->getmaterial() : "-")));
+    if (accessory *pk = dynamic_cast<accessory *>(p)) {
+    if (!pk->getdimension().empty() && pk->getdimension() != "-") thong_tin("Kích thước", pk->getdimension());
+    }
     ry += 6;
     hline(rx, ry, rw);
     ry += 18;
@@ -697,10 +701,16 @@ void App::ve_chi_tiet(Rectangle view) {
     float ykt = y + fmaxf(cao_trai, ry - y) + 50;
 
     // sản phẩm cùng danh mục
+    if (cung_ma_cu != p->getid() || cung_n_cu != shop.size()) {
+        cung_ids.clear();
+        TieuChiLoc c2; c2.subtype = p->getsubtype();
+        VECTOR<KetQuaLoc> ds_cung = loc_cua_hang(shop, bst, c2);
+        for (int i = 0; i < ds_cung.size() && cung_ids.size() < 4; i++)
+            if (ds_cung[i].sp != p) cung_ids.push_back(ds_cung[i].sp->getid());
+        cung_ma_cu = p->getid(); cung_n_cu = shop.size();
+    }
     VECTOR<product *> cung;
-    TieuChiLoc c2; c2.subtype = p->getsubtype();
-    VECTOR<KetQuaLoc> ds_cung = loc_cua_hang(shop, bst, c2);
-    for (int i = 0; i < ds_cung.size() && cung.size() < 4; i++) if (ds_cung[i].sp != p) cung.push_back(ds_cung[i].sp);
+    for (int i = 0; i < cung_ids.size(); i++) { int v = shop.find(cung_ids[i]); if (v >= 0) cung.push_back(shop.take(v)); }
     if (cung.size() > 0) {
         text(F.s22, "Có thể bạn cũng thích", x0, ykt, INK);
         ykt += 44;
@@ -861,7 +871,7 @@ void App::ve_tai_khoan(Rectangle view) {
         Rectangle pr = { cx, cy, cwid, 210 };
         panel(pr, 20);
         DrawCircleV(Vector2{ pr.x + 64, pr.y + 66 }, 40, SKY200);
-        std::string ch = to_utf8(std::u32string(1, to_u32(kh.getTenKH())[0]));
+        std::string ch = kh.getTenKH().empty() ? "?" : to_utf8(std::u32string(1, to_u32(kh.getTenKH())[0]));
         text_c(F.b27, hoa(ch), Rectangle{ pr.x + 24, pr.y + 26, 80, 80 }, SKY600);
         text(F.s22, kh.getTenKH(), pr.x + 124, pr.y + 36, INK);
         text(F.r15, "Mã khách: " + kh.getMaKH(), pr.x + 124, pr.y + 68, MUTED);

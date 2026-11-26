@@ -34,7 +34,11 @@ VECTOR& operator=(const VECTOR& o) {
     }
     return *this;
 }
-
+VECTOR(VECTOR&& o) noexcept : data(o.data), n(o.n), cap(o.cap) { o.data = nullptr; o.n = o.cap = 0; }
+VECTOR& operator=(VECTOR&& o) noexcept {
+        if (this != &o) { delete[] data; data = o.data; n = o.n; cap = o.cap; o.data = nullptr; o.n = o.cap = 0; }
+        return *this;
+    }
     ~VECTOR() { delete[] data; }
 
     void push_back(const T& v) {
@@ -42,9 +46,10 @@ VECTOR& operator=(const VECTOR& o) {
         data[n++] = v;
     }
 
-    void remove(int i) {                         
+    void remove(int i) {
         if (i < 0 || i >= n) return;
         for (int j = i; j < n - 1; j++) data[j] = data[j + 1];
+        data[n - 1] = T();     // thả phần tử thừa (giải phóng chuỗi / bộ nhớ nó giữ)
         n--;
     }
 
@@ -53,6 +58,6 @@ VECTOR& operator=(const VECTOR& o) {
     int size() const                 { return n; }
     int maxsize() const              {return cap; };
     bool empty() const               { return n == 0; }
-    void clear()                     { n = 0; }   
+    void clear() { for (int i = 0; i < n; i++) data[i] = T(); n = 0; }  
 };
 #endif

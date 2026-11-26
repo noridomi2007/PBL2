@@ -107,7 +107,7 @@ void App::ve_chon_bien_the() {
 // ============================ THÊM SẢN PHẨM ============================
 void App::mo_them_sp() {
     ap_hang = 0; ap_kieu = 0; ap_rows = 1; ap_anh.clear(); md_cuon = 0;
-    f_ap_hang_khac.clear(); f_ap_ten.clear(); f_ap_kieu_ct.clear(); f_ap_gia.clear(); f_ap_chat_lieu.clear(); f_ap_bst.clear();
+    f_ap_hang_khac.clear(); f_ap_kich_thuoc.clear(); f_ap_ten.clear(); f_ap_kieu_ct.clear(); f_ap_gia.clear(); f_ap_chat_lieu.clear(); f_ap_bst.clear();
     for (int i = 0; i < 6; i++) { f_ap_mau[i].clear(); f_ap_size[i].clear(); f_ap_sl[i].clear(); }
     modal = M_ADD_PRODUCT;
 }
@@ -116,7 +116,7 @@ static const char *loi_them(KetQuaThem k) {
     switch (k) {
         case THEM_OK: return "";
         case THEM_THIEU_THONG_TIN: return "Thiếu thông tin: cần hãng, tên, giá và ít nhất 1 biến thể.";
-        case THEM_SAI_KIEU: return "Kiểu này không thuộc nhóm quần áo / giày dép.";
+        case THEM_SAI_KIEU: return "Kiểu sản phẩm không hợp lệ.";
         case THEM_KY_TU_CAM: return "Có ký tự | hoặc xuống dòng trong thông tin.";
         case THEM_LOI_ANH: return "Chưa chọn ảnh, hoặc không đọc / lưu được ảnh.";
         case THEM_TRUNG_MA: return "Trùng mã hoặc đã hết mã cho hãng + kiểu này.";
@@ -128,9 +128,9 @@ static const char *loi_them(KetQuaThem k) {
 
 void App::gui_them_sp() {
     std::string hang = ap_hang < SO_HANG_SP ? DS_HANG_SP[ap_hang].ten : f_ap_hang_khac.utf8();
-    int dem = 0, chi_so[16];
-    for (int i = 0; i < SO_KIEU_SP; i++) if (la_ma_kieu_quan_ao(DS_KIEU_SP[i].ma)) chi_so[dem++] = i;
-    std::string kieu = DS_KIEU_SP[chi_so[ap_kieu < dem ? ap_kieu : 0]].ten;
+    int k = ap_kieu < SO_KIEU_SP ? ap_kieu : 0;
+    std::string kieu = DS_KIEU_SP[k].ten;
+    std::string kich_thuoc = la_ma_kieu_phu_kien(DS_KIEU_SP[k].ma) ? cat_khoang_trang(f_ap_kich_thuoc.utf8()) : "";
     VECTOR<Variant> bt;
     for (int i = 0; i < ap_rows; i++) {
         if (f_ap_mau[i].empty() && f_ap_size[i].empty() && f_ap_sl[i].empty()) continue;
@@ -139,13 +139,13 @@ void App::gui_them_sp() {
     VECTOR<std::string> anh;
     for (const std::string &a : ap_anh) anh.push_back(a);
     std::string id;
-    KetQuaThem kq_ = shop.them_quan_ao(cat_khoang_trang(hang), kieu, cat_khoang_trang(f_ap_ten.utf8()), cat_khoang_trang(f_ap_kieu_ct.utf8()),
-                                      (long long)f_ap_gia.number(), cat_khoang_trang(f_ap_chat_lieu.utf8()), bt, anh, &id);
+    KetQuaThem kq_ = shop.them_san_pham(cat_khoang_trang(hang), kieu, cat_khoang_trang(f_ap_ten.utf8()), cat_khoang_trang(f_ap_kieu_ct.utf8()),
+                                      (long long)f_ap_gia.number(), cat_khoang_trang(f_ap_chat_lieu.utf8()), kich_thuoc, bt, anh, &id);
     if (kq_ != THEM_OK) { toast(loi_them(kq_), TOAST_ERR); return; }
     std::string b = f_ap_bst.utf8();
     if (!cat_khoang_trang(b).empty() && bst.dat(id, b) != BST_OK) toast("Đã thêm sản phẩm nhưng chưa gán được bộ sưu tập.", TOAST_ERR);
     anh_xoa_dem(id);
-    pos_dirty = true; can_loc = true;
+    pos_dirty = true; kho_dirty = true; can_loc = true;
     toast("Đã thêm sản phẩm " + id, TOAST_OK);
     modal = M_NONE;
 }
@@ -172,14 +172,13 @@ void App::ve_them_sp_modal() {
     }
     y += 42;
     if (ap_hang >= SO_HANG_SP) { field(f_ap_hang_khac, Rectangle{ x, y, 300, 44 }, F.r15); y += 54; }
-    text(F.m13, "KIỂU (CHỈ NHÓM QUẦN ÁO / GIÀY DÉP)", x, y, MUTED, 1.4f); y += 24;
+        text(F.m13, "KIỂU", x, y, MUTED, 1.4f); y += 24;
     cx = x;
-    int idx = 0;
     for (int i = 0; i < SO_KIEU_SP; i++) {
-        if (!la_ma_kieu_quan_ao(DS_KIEU_SP[i].ma)) continue;
         float cwid = tw(F.m13, DS_KIEU_SP[i].ten) + 28;
-        if (chip(Rectangle{ cx, y, cwid, 32 }, DS_KIEU_SP[i].ten, ap_kieu == idx, F.m13)) ap_kieu = idx;
-        cx += cwid + 8; idx++;
+        if (cx + cwid > x + w) { cx = x; y += 40; }          // 11 kiểu nên phải xuống dòng
+        if (chip(Rectangle{ cx, y, cwid, 32 }, DS_KIEU_SP[i].ten, ap_kieu == i, F.m13)) ap_kieu = i;
+        cx += cwid + 8;
     }
     y += 50;
     text(F.m13, "TÊN SẢN PHẨM", x, y, MUTED, 1.4f); field(f_ap_ten, Rectangle{ x, y + 20, w, 44 }, F.r15); y += 76;
@@ -188,6 +187,11 @@ void App::ve_them_sp_modal() {
     field(f_ap_kieu_ct, Rectangle{ x, y + 20, hw, 44 }, F.r15); field(f_ap_gia, Rectangle{ x + hw + 14, y + 20, hw, 44 }, F.r15); y += 76;
     text(F.m13, "CHẤT LIỆU", x, y, MUTED, 1.4f); text(F.m13, "BỘ SƯU TẬP", x + hw + 14, y, MUTED, 1.4f);
     field(f_ap_chat_lieu, Rectangle{ x, y + 20, hw, 44 }, F.r15); field(f_ap_bst, Rectangle{ x + hw + 14, y + 20, hw, 44 }, F.r15); y += 76;
+    if (la_ma_kieu_phu_kien(DS_KIEU_SP[ap_kieu < SO_KIEU_SP ? ap_kieu : 0].ma)) {
+        text(F.m13, "KÍCH THƯỚC (VD: 40mm, 16cm)", x, y, MUTED, 1.4f);
+        field(f_ap_kich_thuoc, Rectangle{ x, y + 20, hw, 44 }, F.r15);
+        y += 76;
+    }
     VECTOR<std::string> ds_bst = bst.ds_ten();
     if (ds_bst.size() > 0) {
         text(F.r13, "Có sẵn:", x, y + 6, MUTED);
@@ -264,7 +268,7 @@ void App::ve_nhap_kho_modal() {
         if (nk_che_do == 0) k = shop.nhap_kho(md_ma, f_nk_mau.utf8(), f_nk_size.utf8(), (int)f_nk_sl.number());
         else k = shop.kiem_ke(md_ma, f_nk_mau.utf8(), f_nk_size.utf8(), (int)f_nk_sl.number());
         switch (k) {
-            case KHO_OK: toast(nk_che_do == 0 ? "Đã nhập kho." : "Đã cập nhật số lượng.", TOAST_OK); f_nk_sl.clear(); pos_dirty = true; can_loc = true; break;
+            case KHO_OK: toast(nk_che_do == 0 ? "Đã nhập kho." : "Đã cập nhật số lượng.", TOAST_OK); f_nk_sl.clear(); pos_dirty = true; kho_dirty = true; can_loc = true; break;
             case KHO_KHONG_CO_BIEN_THE: toast("Không có ô màu / size này để kiểm kê.", TOAST_ERR); break;
             case KHO_SAI_SO_LUONG: toast("Số lượng không hợp lệ (nhập > 0; tối đa 99.999 mỗi ô).", TOAST_ERR); break;
             case KHO_THIEU_THONG_TIN: toast("Cần nhập cả màu và size.", TOAST_ERR); break;
@@ -303,7 +307,7 @@ void App::ve_sua_sp_modal() {
     if (button(Rectangle{ x, r.y + r.height - 68, w, 50 }, "LƯU THAY ĐỔI", BTN_PRIMARY, F.m15, true, 25, 1.2f)) {
         KetQuaKho k = shop.dat_gia(md_ma, (long long)f_sp_gia.number());
         KetQuaBST b = bst.dat(md_ma, f_sp_bst.utf8());
-        if (k == KHO_OK && b == BST_OK) { toast("Đã lưu thay đổi.", TOAST_OK); pos_dirty = true; can_loc = true; modal = M_NONE; }
+        if (k == KHO_OK && b == BST_OK) { toast("Đã lưu thay đổi.", TOAST_OK); pos_dirty = true; kho_dirty = true; can_loc = true; modal = M_NONE; }
         else if (b == BST_QUA_DAI) toast("Tên bộ sưu tập quá dài (tối đa 28 ký tự).", TOAST_ERR);
         else if (b == BST_KY_TU_CAM) toast("Không dùng ký tự | trong tên bộ sưu tập.", TOAST_ERR);
         else toast("Không lưu được, vui lòng kiểm tra lại giá.", TOAST_ERR);
@@ -322,7 +326,7 @@ void App::ve_xoa_sp_modal() {
         if (shop.xoa_san_pham(id)) {
             bst.dat(id, "");
             anh_xoa_dem(id);
-            kho_mo.clear(); pos_dirty = true; can_loc = true;
+            kho_mo.clear(); pos_dirty = true; kho_dirty = true; can_loc = true;
             toast("Đã xóa sản phẩm " + id, TOAST_OK);
         } else toast("Không xóa được (lỗi ghi file).", TOAST_ERR);
         modal = M_NONE;

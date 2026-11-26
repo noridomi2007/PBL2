@@ -74,6 +74,13 @@ static bool file_trong(const string &duong_dan) {
 void DoanhThu::lap_chi_muc(int vi_tri) {
     const GiaoDich &g = ds[vi_tri];
     da_ban_sp[g.idsp] += g.sl;                   // tính cả dòng cũ chưa có hóa đơn
+    long long tt = g.thanh_tien();
+    if (!g.ma_kh.empty()) chi_tieu_kh[g.ma_kh] += tt;
+    if (!g.ma_nv.empty()) {
+        doanh_so_nv[g.ma_nv] += tt;
+        for (int kk = 0; kk < 4; kk++)
+            doanh_so_nv_ky[g.ma_nv + "|" + to_string(kk) + "|" + to_string(lay_khoa_ky(g.thoi_gian, (KieuKy)kk))] += tt;
+    }
     if (g.ma_hd.empty()) return;                 // dòng cũ chưa có hóa đơn: không đưa vào chỉ mục
     VECTOR<int> &cac_dong = chi_muc_hd[g.ma_hd];
     if (cac_dong.empty() && !g.ma_kh.empty()) hd_cua_khach[g.ma_kh].push_front(g.ma_hd);  // lần đầu thấy hóa đơn này: chèn ĐẦU danh sách liên kết
@@ -86,7 +93,10 @@ void DoanhThu::lap_chi_muc(int vi_tri) {
 void DoanhThu::xay_lai_chi_muc() {
     chi_muc_hd.clear();
     hd_cua_khach.clear();
-    da_ban_sp.clear();
+    da_ban_sp.clear();     
+    chi_tieu_kh.clear(); 
+    doanh_so_nv.clear(); 
+    doanh_so_nv_ky.clear();
     so_hd_lon_nhat = 0;
     for (int i = 0; i < ds.size(); i++) lap_chi_muc(i);
 }
@@ -204,19 +214,17 @@ static bool ky_hon(const DoanhThuKy &a, const DoanhThuKy &b) {
 VECTOR<DoanhThuKy> DoanhThu::top_ky(KieuKy k, int top_n) const {
     // Bước 1: gom doanh thu theo từng kỳ
     VECTOR<DoanhThuKy> gom;
+    HASHTABLE<int> vt_cua;                                   // khóa kỳ -> vị trí trong gom
     for (int i = 0; i < ds.size(); i++) {
         long long khoa = lay_khoa_ky(ds[i].thoi_gian, k);
-        int vt = -1;
-        for (int j = 0; j < gom.size(); j++) {
-            if (gom[j].khoa == khoa) { vt = j; break; }
-        }
-        if (vt == -1) {
+        int *vt = vt_cua.find(to_string(khoa));
+        if (!vt) {
             DoanhThuKy m; m.khoa = khoa; m.tong = ds[i].thanh_tien();
+            vt_cua.put(to_string(khoa), gom.size());
             gom.push_back(m);
-        } else {
-            gom[vt].tong += ds[i].thanh_tien();
-        }
+        } else gom[*vt].tong += ds[i].thanh_tien();
     }
+    
 
     // Bước 2: đưa vào heap, lấy top_n phần tử ở gốc
     HEAP<DoanhThuKy> heap(ky_hon);
@@ -235,21 +243,19 @@ static bool sp_hon(const DoanhThuSP &a, const DoanhThuSP &b) {
 
 VECTOR<DoanhThuSP> DoanhThu::top_san_pham(KieuKy k, long long khoa, int top_n) const {
     VECTOR<DoanhThuSP> gom;
+    HASHTABLE<int> vt_cua;                                   // idsp -> vị trí trong gom
     for (int i = 0; i < ds.size(); i++) {
-        if (lay_khoa_ky(ds[i].thoi_gian, k) != khoa) continue;   // chỉ lấy giao dịch trong kỳ này
-
-        int vt = -1;
-        for (int j = 0; j < gom.size(); j++) {
-            if (gom[j].idsp == ds[i].idsp) { vt = j; break; }
-        }
-        if (vt == -1) {
+        if (lay_khoa_ky(ds[i].thoi_gian, k) != khoa) continue;
+        int *vt = vt_cua.find(ds[i].idsp);
+        if (!vt) {
             DoanhThuSP m;
             m.idsp = ds[i].idsp; m.ten = ds[i].ten;
             m.tong = ds[i].thanh_tien(); m.so_luong = ds[i].sl;
+            vt_cua.put(ds[i].idsp, gom.size());
             gom.push_back(m);
         } else {
-            gom[vt].tong += ds[i].thanh_tien();
-            gom[vt].so_luong += ds[i].sl;
+            gom[*vt].tong += ds[i].thanh_tien();
+            gom[*vt].so_luong += ds[i].sl;
         }
     }
 
@@ -262,26 +268,16 @@ VECTOR<DoanhThuSP> DoanhThu::top_san_pham(KieuKy k, long long khoa, int top_n) c
 }
 // ---------- KHÁCH & NHÂN VIÊN ----------
 long long DoanhThu::tong_chi_tieu_khach(const string &ma_kh) const {
-    if (ma_kh.empty()) return 0;
-    long long tong = 0;
-    for (int i = 0; i < ds.size(); i++) if (ds[i].ma_kh == ma_kh) tong += ds[i].thanh_tien();
-    return tong;
+    const long long *p = chi_tieu_kh.find(ma_kh);
+    return p ? *p : 0;
 }
-
 long long DoanhThu::doanh_so_nhan_vien(const string &ma_nv) const {
-    if (ma_nv.empty()) return 0;
-    long long tong = 0;
-    for (int i = 0; i < ds.size(); i++) if (ds[i].ma_nv == ma_nv) tong += ds[i].thanh_tien();
-    return tong;
+    const long long *p = doanh_so_nv.find(ma_nv);
+    return p ? *p : 0;
 }
-
 long long DoanhThu::doanh_so_nhan_vien(const string &ma_nv, KieuKy k, long long khoa) const {
-    if (ma_nv.empty()) return 0;
-    long long tong = 0;
-    for (int i = 0; i < ds.size(); i++) {
-        if (ds[i].ma_nv == ma_nv && lay_khoa_ky(ds[i].thoi_gian, k) == khoa) tong += ds[i].thanh_tien();
-    }
-    return tong;
+    const long long *p = doanh_so_nv_ky.find(ma_nv + "|" + to_string((int)k) + "|" + to_string(khoa));
+    return p ? *p : 0;
 }
 
 // Doanh số cao hơn đứng trước; bằng nhau thì mã nhỏ hơn đứng trước
@@ -292,13 +288,16 @@ static bool nv_hon(const DoanhThuNV &a, const DoanhThuNV &b) {
 
 VECTOR<DoanhThuNV> DoanhThu::top_nhan_vien(KieuKy k, long long khoa, int top_n) const {
     VECTOR<DoanhThuNV> gom;
+    HASHTABLE<int> vt_cua;
     for (int i = 0; i < ds.size(); i++) {
-        if (ds[i].ma_nv.empty()) continue;                              // khách tự mua: không tính cho nhân viên nào
+        if (ds[i].ma_nv.empty()) continue;
         if (lay_khoa_ky(ds[i].thoi_gian, k) != khoa) continue;
-        int vt = -1;
-        for (int j = 0; j < gom.size(); j++) if (gom[j].ma_nv == ds[i].ma_nv) { vt = j; break; }
-        if (vt == -1) { DoanhThuNV m; m.ma_nv = ds[i].ma_nv; m.tong = ds[i].thanh_tien(); gom.push_back(m); }
-        else gom[vt].tong += ds[i].thanh_tien();
+        int *vt = vt_cua.find(ds[i].ma_nv);
+        if (!vt) {
+            DoanhThuNV m; m.ma_nv = ds[i].ma_nv; m.tong = ds[i].thanh_tien();
+            vt_cua.put(ds[i].ma_nv, gom.size());
+            gom.push_back(m);
+        } else gom[*vt].tong += ds[i].thanh_tien();
     }
     HEAP<DoanhThuNV> heap(nv_hon);
     for (int i = 0; i < gom.size(); i++) heap.push(gom[i]);

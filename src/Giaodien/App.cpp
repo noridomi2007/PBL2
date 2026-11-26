@@ -42,6 +42,7 @@ App::App() {
     f_ap_kieu_ct = Field(FK_TEXT, RONG_KIEU, "Kiểu chi tiết (vd: Áo thun)");
     f_ap_gia = Field(FK_MONEY, 11, "Giá bán");
     f_ap_chat_lieu = Field(FK_TEXT, RONG_CHAT_LIEU, "Chất liệu");
+    f_ap_kich_thuoc = Field(FK_TEXT, RONG_KICH_THUOC, "Kích thước (vd: 40mm)");
     f_ap_bst = Field(FK_TEXT, RONG_BST_TEN, "Bộ sưu tập (không bắt buộc)");
     for (int i = 0; i < 6; i++) {
         f_ap_mau[i] = Field(FK_TEXT, RONG_MAU, "Màu");
@@ -173,6 +174,7 @@ void App::dang_nhap_khach() {
     int i = qk.dang_nhap(f_sdt.utf8(), f_mk.utf8());
     if (i == -1) { thong_bao_dn = "Sai số điện thoại / mật khẩu, hoặc tài khoản đang bị khóa."; return; }
     role = R_CUSTOMER; ma = qk.lay(i).getMaKH(); ten = qk.lay(i).getTenKH();
+    chi_n = -1;  
     f_mk.clear(); thong_bao_dn.clear();
     toast("Xin chào " + ten + "!", TOAST_OK);
     doi_man(quay_lai == S_LOGIN || quay_lai == S_REGISTER ? S_HOME : quay_lai);

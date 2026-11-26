@@ -1,3 +1,6 @@
 | Time       | idsp      | name                                                             | Color            | Size     | Số lượng | Đơn giá     | idHĐ     | maKH     | maNV     | giảm giá    |
 | 1795669200 | SPCM0004A | Áo Polo thể thao nam Exdry Flexmotion S-3XL                      | Xanh             | 2XL      | 2     | 130000      | HD000001 | KH0001   |          | 0           |
 | 1795669200 | SPCM0003A | Áo khoác thể thao Windbreaker Ripstop S-3XL                      | Xanh             | 2XL      | 1     | 499000      | HD000001 | KH0001   |          | 0           |
+| 1795669200 | SPCM0002A | Áo Hoodie chống nắng nam Quick Dry Sun Protection UPF50 S-3XL    | Xanh             | 2XL      | 1     | 129000      | HD000002 | KH0001   |          | 0           |
+| 1795669200 | SPCM0002A | Áo Hoodie chống nắng nam Quick Dry Sun Protection UPF50 S-3XL    | Xanh             | 2XL      | 1     | 129000      | HD000003 | KH0002   |          | 0           |
+| 1795669200 | SPLV0001D | Đồng hồ ABC                                                      | Bạc              | 40mm     | 1     | 10190000    | HD000004 | KH0001   |          | 0           |

@@ -120,11 +120,12 @@ public:
     KetQuaKho kiem_ke(const string& id, const string& mau, const string& size, int sl);
     KetQuaKho dat_gia(const string& id, long long gia);
 
-    KetQuaThem them_quan_ao(const string &ten_hang, const string &ten_kieu,
+    KetQuaThem them_san_pham(const string &ten_hang, const string &ten_kieu,
                         const string &ten_sp, const string &kieu_chi_tiet,
                         long long gia, const string &chat_lieu,
+                        const string &kich_thuoc,            
                         const VECTOR<Variant> &bien_the,
-                        const VECTOR<string> &ds_anh_nguon,   // nhiều ảnh
+                        const VECTOR<string> &ds_anh_nguon,
                         string *ma_moi = nullptr);
 };
 

@@ -68,6 +68,9 @@ private:
     HASHTABLE<DSLK_DON<string>> hd_cua_khach; // mã khách  -> DANH SÁCH LIÊN KẾT ĐƠN các mã hóa đơn của khách (mới ghi nhất đứng đầu)
     long long so_hd_lon_nhat = 0;            // số lớn nhất trong các mã HDxxxxxx, để sinh mã kế tiếp O(1)
     HASHTABLE<int> da_ban_sp;                // mã sản phẩm -> tổng số lượng đã bán (tính từ sổ, dùng cho "Đã bán" + lọc bán chạy)
+    HASHTABLE<long long> chi_tieu_kh;        // mã khách -> tổng chi tiêu
+    HASHTABLE<long long> doanh_so_nv;        // mã nhân viên -> doanh số mọi thời gian
+    HASHTABLE<long long> doanh_so_nv_ky;     // "mã_nv|kiểu kỳ|khóa kỳ" -> doanh số trong kỳ
 
     void lap_chi_muc(int vi_tri);            // đưa dòng thứ vi_tri vào các chỉ mục
     void xay_lai_chi_muc();

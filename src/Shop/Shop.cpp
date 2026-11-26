@@ -8,7 +8,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cctype>
-
+#include "../Tienich/Sapxep.h"
 // =========================================================================
 // HÀM TIỆN ÍCH NỘI BỘ
 // =========================================================================
@@ -220,22 +220,28 @@ KetQuaThanhToan Shop::thanh_toan(const GioHang& gio, const string& ma_kh, const 
     static bool qua_dai(const string &s, int toi_da) {
         return len_utf8(s.c_str()) > toi_da;   // đếm ký tự, không đếm byte
 }
-KetQuaThem Shop::them_quan_ao(const string &ten_hang, const string &ten_kieu,
-                              const string &ten_sp, const string &kieu_chi_tiet,
-                              long long gia, const string &chat_lieu,
-                              const VECTOR<Variant> &bien_the,
-                              const VECTOR<string> &ds_anh_nguon, string *ma_moi) {
+KetQuaThem Shop::them_san_pham(const string &ten_hang, const string &ten_kieu,
+                               const string &ten_sp, const string &kieu_chi_tiet,
+                               long long gia, const string &chat_lieu,
+                               const string &kich_thuoc,
+                               const VECTOR<Variant> &bien_the,
+                               const VECTOR<string> &ds_anh_nguon, string *ma_moi) {
     if (ten_hang.empty() || ten_sp.empty() || gia < 0 || bien_the.empty())
         return THEM_THIEU_THONG_TIN;
-    if (!la_ma_kieu_quan_ao(kieu_sang_ma_kieu(ten_kieu)))
+
+    bool co_trong_bang = false;                       // tên kiểu phải có trong bảng DS_KIEU_SP
+    for (int i = 0; i < SO_KIEU_SP; i++) if (ten_kieu == DS_KIEU_SP[i].ten) co_trong_bang = true;
+    char ma_kieu = kieu_sang_ma_kieu(ten_kieu);
+    bool la_pk = la_ma_kieu_phu_kien(ma_kieu);
+    if (!co_trong_bang || (!la_pk && !la_ma_kieu_quan_ao(ma_kieu)))
         return THEM_SAI_KIEU;
 
     if (co_ky_tu_cam(ten_hang) || co_ky_tu_cam(ten_sp) ||
-        co_ky_tu_cam(kieu_chi_tiet) || co_ky_tu_cam(chat_lieu))
+        co_ky_tu_cam(kieu_chi_tiet) || co_ky_tu_cam(chat_lieu) || co_ky_tu_cam(kich_thuoc))
         return THEM_KY_TU_CAM;
     if (qua_dai(ten_sp, RONG_TEN) || qua_dai(ten_hang, RONG_HANG) ||
         qua_dai(kieu_chi_tiet, RONG_KIEU) || qua_dai(chat_lieu, RONG_CHAT_LIEU) ||
-        gia > 99999999999LL)
+        qua_dai(kich_thuoc, RONG_KICH_THUOC) || gia > 99999999999LL)
         return THEM_QUA_DAI;
     for (int i = 0; i < bien_the.size(); i++) {
         if (qua_dai(bien_the[i].color, RONG_MAU) || qua_dai(bien_the[i].size, RONG_SIZE) ||
@@ -247,12 +253,15 @@ KetQuaThem Shop::them_quan_ao(const string &ten_hang, const string &ten_kieu,
             return THEM_KY_TU_CAM;
     }
 
-    string id = sinh_ma_sp(ten_hang, ten_kieu);   // vd SPCM0003A
+    string id = sinh_ma_sp(ten_hang, ten_kieu);   // vd SPCM0003A, SPCS0002D
     if (id.empty() || find(id) != -1) return THEM_TRUNG_MA;
 
     if (!luu_nhieu_anh(id, ds_anh_nguon)) return THEM_LOI_ANH;
 
-    clothing *c = new clothing(id, ten_sp, ten_hang, ten_kieu, kieu_chi_tiet, gia, chat_lieu);
+    product *c;
+    if (la_pk) c = new accessory(id, ten_sp, ten_hang, ten_kieu, kieu_chi_tiet, gia, chat_lieu,
+                                 kich_thuoc.empty() ? string("-") : kich_thuoc);
+    else       c = new clothing(id, ten_sp, ten_hang, ten_kieu, kieu_chi_tiet, gia, chat_lieu);
     for (int i = 0; i < bien_the.size(); i++) {
         c->them_variant(bien_the[i].color, bien_the[i].size, bien_the[i].sl);
     }
@@ -577,30 +586,11 @@ VECTOR<product*> Shop::loc_san_pham(const string& hang,
         res.push_back(p);
     }
 
-    // Sắp xếp kết quả theo yêu cầu
-    int n = res.size();
-    for (int i = 0; i < n - 1; i++) {
-        for (int j = i + 1; j < n; j++) {
-            bool can_doi = false;
-            if (sap_xep == 0) {
-                // Sắp xếp theo mã SP từ trên xuống dưới theo hãng (SPLV... -> SPNK...)
-                if (res[i]->getid() > res[j]->getid()) can_doi = true;
-            } else if (sap_xep == 1) {
-                // Giá tăng dần
-                if (res[i]->getprice() > res[j]->getprice()) can_doi = true;
-            } else if (sap_xep == 2) {
-                // Giá giảm dần
-                if (res[i]->getprice() < res[j]->getprice()) can_doi = true;
-            } else if (sap_xep == 3) {
-                // Tên A-Z
-                if (res[i]->getnamenorm() > res[j]->getnamenorm()) can_doi = true;
-            }
-            if (can_doi) {
-                product* temp = res[i];
-                res[i] = res[j];
-                res[j] = temp;
-            }
-        }
+    switch (sap_xep) {
+        case 0: sap_xep_tron(res, [](product *a, product *b) { return a->getid() < b->getid(); }); break;
+        case 1: sap_xep_tron(res, [](product *a, product *b) { return a->getprice() < b->getprice(); }); break;
+        case 2: sap_xep_tron(res, [](product *a, product *b) { return a->getprice() > b->getprice(); }); break;
+        case 3: sap_xep_tron(res, [](product *a, product *b) { return a->getnamenorm() < b->getnamenorm(); }); break;
     }
 
     return res;
@@ -623,20 +613,10 @@ VECTOR<KetQuaTimKiem> Shop::tim_kiem(const string& tu_khoa, double nguong_khop_m
         }
     }
 
-    // Sắp xếp giảm dần theo tỷ lệ % khớp (sản phẩm khớp nhiều nhất đứng đầu)
-    int n = res.size();
-    for (int i = 0; i < n - 1; i++) {
-        for (int j = i + 1; j < n; j++) {
-            // Ưu tiên 1: % khớp cao hơn đứng trước
-            // Ưu tiên 2: Nếu cùng % khớp, sản phẩm có giá thấp hơn đứng trước
-            if (res[i].ti_le_khop < res[j].ti_le_khop || 
-               (res[i].ti_le_khop == res[j].ti_le_khop && res[i].sp->getprice() > res[j].sp->getprice())) {
-                KetQuaTimKiem temp = res[i];
-                res[i] = res[j];
-                res[j] = temp;
-            }
-        }
-    }
+    sap_xep_tron(res, [](const KetQuaTimKiem &a, const KetQuaTimKiem &b) {
+        if (a.ti_le_khop != b.ti_le_khop) return a.ti_le_khop > b.ti_le_khop;
+        return a.sp->getprice() < b.sp->getprice();
+    });
 
     return res;
 }
@@ -678,16 +658,7 @@ VECTOR<KetQuaTimKiem> Shop::tim_kiem_va_loc(const string& tu_khoa,
     }
 
     // Sắp xếp kết quả tìm kiếm: ưu tiên % khớp cao nhất lên đầu
-    int n = res.size();
-    for (int i = 0; i < n - 1; i++) {
-        for (int j = i + 1; j < n; j++) {
-            if (res[i].ti_le_khop < res[j].ti_le_khop) {
-                KetQuaTimKiem temp = res[i];
-                res[i] = res[j];
-                res[j] = temp;
-            }
-        }
-    }
+    sap_xep_tron(res, [](const KetQuaTimKiem &a, const KetQuaTimKiem &b) { return a.ti_le_khop > b.ti_le_khop; });
 
     return res;
 }
