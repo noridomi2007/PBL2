@@ -1,0 +1,3 @@
+| Time       | idsp      | name                                                             | Color            | Size     | Số lượng | Đơn giá     | idHĐ     | maKH     | maNV     | giảm giá    |
+| 1795669200 | SPCM0004A | Áo Polo thể thao nam Exdry Flexmotion S-3XL                      | Xanh             | 2XL      | 2     | 130000      | HD000001 | KH0001   |          | 0           |
+| 1795669200 | SPCM0003A | Áo khoác thể thao Windbreaker Ripstop S-3XL                      | Xanh             | 2XL      | 1     | 499000      | HD000001 | KH0001   |          | 0           |

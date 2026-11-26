@@ -12,7 +12,6 @@
 #include <ctime>
 #include <cmath>
 #include <cstring>
-
 struct GLFWwindow;
 extern "C" {
 typedef void (*GLFWcharfun)(GLFWwindow *, unsigned int);

@@ -8,7 +8,7 @@ const int RONG_KH_MA      = 8;     // KH0001
 const int RONG_KH_TEN     = 28;
 const int RONG_KH_SDT     = 10;
 const int RONG_KH_EMAIL   = 30;
-const int RONG_KH_DIACHI  = 40;
+const int RONG_KH_DIACHI  = 80;
 const int RONG_KH_MATKHAU = 25;    // muoi$bam (8 + 1 + 16), không sửa
 const int RONG_KH_NGAY    = 10;    // timestamp 10 chữ số
 const int RONG_KH_TT      = 2;     // 1 = hoạt động, 0 = khóa
