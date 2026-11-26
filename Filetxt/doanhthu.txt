@@ -1,3 +1,0 @@
-| thoi_gian  | idsp      | ten                                                              | color            | size     | sl    | don_gia     | ma_hd    | ma_kh    | ma_nv    | giam_gia    |
-| 1793941200 | SPCM0004A | Áo Polo thể thao nam Exdry Flexmotion S-3XL                      | Xanh             | 2XL      | 2     | 130000      | HD000001 | KH0001   | NV0001   | 0           |
-| 1793941200 | SPAG0001X | Vòng Tay Trầm Hương                                              | Nâu              | 16cm     | 3     | 450000      | HD000002 | KH0003   |          | 0           |
