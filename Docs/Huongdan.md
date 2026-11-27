@@ -5,8 +5,6 @@
 mingw32-make clean
 mingw32-make          ->  app.exe   (giao diện đồ họa)
 .\app.exe             (chạy ở thư mục PBL2 này, để app tìm thấy Data/ và Assets/)
-
-mingw32-make test     ->  test.exe  (bản terminal, chỉ để kiểm thử logic)
 ```
 
 ## 2. Sơ đồ thư mục
@@ -34,7 +32,6 @@ PBL2/
 │     ├─ Bieudo.cpp         doanh thu: biểu đồ cột / tròn (chỉ admin)
 │     ├─ Hopthoai.cpp       các hộp thoại
 │     └─ Cauhinh.h          tên cửa hàng, khẩu hiệu
-├─ Test/                    bản kiểm thử trên terminal
 ├─ Data/                    file dữ liệu .txt (sản phẩm, khách, nhân viên, doanh thu, bộ sưu tập)
 ├─ Assets/
 │  ├─ Images/               ảnh sản phẩm (SPCM0002A_1.png ...)
@@ -64,7 +61,6 @@ PBL2/
 | `Filetxt/` | `Data/` | |
 | `Images/`, `font/` | `Assets/Images/`, `Assets/Fonts/` | gom tài nguyên |
 | `include/`, `lib/` | `Raylib/Include/`, `Raylib/Lib/` | gom thư viện ngoài |
-| `test/test_main.cpp` | `Test/Test.cpp` | |
 
 Quy ước: tên thư mục và file mã nguồn chỉ viết hoa chữ cái đầu. Tên class, hàm, biến trong code KHÔNG đổi.
 Các đường dẫn `#include` và đường dẫn dữ liệu trong code đã được sửa theo.

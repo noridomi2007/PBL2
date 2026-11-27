@@ -19,13 +19,10 @@ SRC = $(LOI_SRC) \
       src/Main.cpp
 OUT = app.exe
 
-.PHONY: all test clean
+.PHONY: all clean
 
 all:
 	$(CXX) $(SRC) -o $(OUT) $(CXXFLAGS) $(LDFLAGS)
 
-test:
-	$(CXX) Test/Test.cpp $(LOI_SRC) -o test.exe $(CXXFLAGS) $(LDFLAGS)
-
 clean:
-	-del $(OUT) test.exe
+	-del $(OUT)
